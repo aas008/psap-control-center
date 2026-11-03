@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="430" viewBox="0 0 980 430" role="img" aria-labelledby="flowTitle flowDesc">
+  <title id="flowTitle">Dashboard CSV data flow</title>
+  <desc id="flowDesc">Forge jobs produce a per-run dashboard.csv and append rows to the consolidated CSV in S3. The same artifact is exported to MLflow. Control Center fetches the artifact, previews changes, backs up the CSV, and writes back to S3. The staging dashboard reads the consolidated CSV.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="979" height="429" rx="14" fill="#f8fafc" stroke="#cbd5e1"/>
+
+  <!-- Forge -->
+  <rect x="40" y="40" width="210" height="92" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+  <text x="58" y="68" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#78350f">Forge job</text>
+  <text x="58" y="89" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#78350f">benchmark + postprocess</text>
+  <text x="58" y="110" font-family="Menlo, Consolas, monospace" font-size="11" fill="#92400e">dashboard.csv</text>
+
+  <!-- MLflow -->
+  <rect x="40" y="250" width="210" height="110" rx="10" fill="#ede9fe" stroke="#8b5cf6"/>
+  <text x="58" y="278" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#4c1d95">MLflow run</text>
+  <text x="58" y="300" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#4c1d95">dashboard.csv artifact</text>
+  <text x="58" y="321" font-family="Menlo, Consolas, monospace" font-size="11" fill="#5b21b6">rhaiis.run_uuid tag</text>
+  <text x="58" y="342" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#6d28d9">one run per FournosJob</text>
+
+  <!-- S3 -->
+  <rect x="380" y="120" width="230" height="120" rx="10" fill="#ccfbf1" stroke="#14b8a6"/>
+  <text x="398" y="148" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#134e4a">S3 dashboard</text>
+  <text x="398" y="170" font-family="Menlo, Consolas, monospace" font-size="10.5" fill="#115e59">consolidated_dashboard.csv</text>
+  <text x="398" y="191" font-family="Menlo, Consolas, monospace" font-size="10.5" fill="#115e59">psap-dashboard-data</text>
+  <text x="398" y="216" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#0f766e">one object, two writers</text>
+
+  <!-- Control Center -->
+  <rect x="720" y="110" width="220" height="160" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+  <text x="738" y="138" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#1e3a8a">Control Center</text>
+  <text x="738" y="160" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#1e40af">resolve UUID / MLflow run</text>
+  <text x="738" y="181" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#1e40af">preview &#8594; backup &#8594; write</text>
+  <text x="738" y="202" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#1e40af">admin UI + job action</text>
+  <text x="738" y="230" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#1e40af">ETag conditional write</text>
+  <text x="738" y="251" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#1e40af">backup + audit</text>
+
+  <!-- Staging dashboard -->
+  <rect x="380" y="330" width="230" height="66" rx="10" fill="#e2e8f0" stroke="#94a3b8"/>
+  <text x="398" y="356" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#334155">Staging dashboard</text>
+  <text x="398" y="378" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#475569">reads the consolidated CSV</text>
+
+  <!-- Job detail / admin mini boxes -->
+  <rect x="720" y="30" width="104" height="48" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="772" y="59" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#1e40af">Job detail</text>
+  <rect x="836" y="30" width="104" height="48" rx="8" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="888" y="59" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#1e40af">Admin panel</text>
+
+  <!-- Arrows -->
+  <path d="M250 86 C300 86 335 120 380 140" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="290" y="106" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#475569">append (ETag)</text>
+
+  <line x1="145" y1="132" x2="145" y2="250" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="154" y="196" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#475569">export</text>
+
+  <path d="M250 305 C470 305 560 245 720 220" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="616" y="212" font-family="Arial, Helvetica, sans-serif" font-size="9" fill="#475569">fetch CSV</text>
+
+  <line x1="720" y1="180" x2="610" y2="180" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="628" y="170" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#475569">read / write</text>
+
+  <line x1="495" y1="240" x2="495" y2="330" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="504" y="290" font-family="Arial, Helvetica, sans-serif" font-size="10.5" fill="#475569">read</text>
+
+  <line x1="772" y1="78" x2="772" y2="110" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="888" y1="78" x2="888" y2="110" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Legend -->
+  <rect x="40" y="396" width="12" height="12" rx="3" fill="#f59e0b"/>
+  <text x="58" y="406" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#475569">Forge producer</text>
+  <rect x="170" y="396" width="12" height="12" rx="3" fill="#8b5cf6"/>
+  <text x="188" y="406" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#475569">MLflow artifact</text>
+  <rect x="312" y="396" width="12" height="12" rx="3" fill="#14b8a6"/>
+  <text x="330" y="406" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#475569">S3 object</text>
+  <rect x="420" y="396" width="12" height="12" rx="3" fill="#3b82f6"/>
+  <text x="438" y="406" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#475569">Control Center</text>
+</svg>

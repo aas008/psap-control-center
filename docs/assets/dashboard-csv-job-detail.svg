@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="580" viewBox="0 0 980 580" role="img" aria-labelledby="detailTitle detailDesc">
+  <title id="detailTitle">Job detail push confirmation wireframe</title>
+  <desc id="detailDesc">A Succeeded RHAIIS job in the Control Center Fournos Dashboard shows a Push to Staging Dashboard action. The confirmation panel shows the dashboard UUID, MLflow run, target S3 key, row preview, and a backup note.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <!-- App chrome -->
+  <rect x="0" y="0" width="980" height="580" fill="#f0f0f0"/>
+  <rect x="0" y="0" width="980" height="22" fill="#fde68a"/>
+  <text x="490" y="15" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" letter-spacing="1.2" fill="#78350f">DEVELOPMENT</text>
+
+  <rect x="0" y="22" width="220" height="558" fill="#212427"/>
+  <rect x="220" y="22" width="760" height="48" fill="#151515"/>
+
+  <!-- Sidebar brand -->
+  <rect x="16" y="38" width="28" height="28" rx="6" fill="#e11d48"/>
+  <text x="30" y="57" text-anchor="middle" font-family="Red Hat Display, Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#ffffff">P</text>
+  <text x="52" y="49" font-family="Red Hat Display, Arial, Helvetica, sans-serif" font-size="10.5" font-weight="700" fill="#ffffff">PSAP Control Center</text>
+  <text x="52" y="63" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8" fill="#94a3b8">Cluster Management</text>
+
+  <!-- Sidebar nav -->
+  <text x="18" y="100" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#cbd5e1">Overview</text>
+  <text x="18" y="124" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#cbd5e1">Clusters</text>
+  <text x="18" y="148" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#cbd5e1">Reservations</text>
+  <text x="18" y="172" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#cbd5e1">Calendar</text>
+  <text x="18" y="196" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" font-weight="700" fill="#ffffff">Fournos Dashboard</text>
+  <rect x="18" y="184" width="3" height="16" rx="1.5" fill="#73bcf7"/>
+
+  <text x="34" y="220" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" font-weight="700" fill="#ffffff">Jobs</text>
+  <text x="34" y="242" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" fill="#94a3b8">Submit</text>
+  <text x="34" y="264" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" fill="#94a3b8">CPT Jobs</text>
+  <text x="34" y="286" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" fill="#94a3b8">Schedules &amp; Locks</text>
+  <text x="34" y="308" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" fill="#73bcf7">Dashboard CSV</text>
+
+  <text x="18" y="338" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#64748b">Results</text>
+  <text x="18" y="362" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#64748b">Settings</text>
+
+  <!-- Top bar -->
+  <text x="240" y="51" font-family="Red Hat Display, Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#ffffff">Fournos Dashboard</text>
+  <rect x="368" y="36" width="76" height="18" rx="9" fill="rgba(255,255,255,0.10)"/>
+  <text x="406" y="49" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8" fill="#cbd5e1">Experimental</text>
+  <text x="830" y="50" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#cbd5e1">Refresh</text>
+  <rect x="880" y="34" width="70" height="22" rx="6" fill="#dc2626"/>
+  <text x="915" y="49" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#ffffff">Sign In</text>
+
+  <!-- Content -->
+  <text x="244" y="92" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#64748b">Fournos Dashboard / Jobs</text>
+  <text x="244" y="116" font-family="Red Hat Display, Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#0f172a">forge-rhaiis-gpt-oss-120b-7f3c</text>
+
+  <rect x="244" y="128" width="84" height="22" rx="11" fill="#dcfce7" stroke="#86efac"/>
+  <text x="286" y="143" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" font-weight="700" fill="#166534">Succeeded</text>
+  <rect x="336" y="128" width="58" height="22" rx="11" fill="#e0f2fe" stroke="#7dd3fc"/>
+  <text x="365" y="143" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" font-weight="600" fill="#075985">rhaiis</text>
+  <text x="956" y="143" text-anchor="end" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#94a3b8">Disabled when the UUID is already on the CSV</text>
+
+  <line x1="244" y1="162" x2="956" y2="162" stroke="#d6dee8"/>
+
+  <rect x="244" y="176" width="84" height="30" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="286" y="196" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#334155">Run Again</text>
+  <rect x="336" y="176" width="100" height="30" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="386" y="196" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#334155">Edit &amp; Submit</text>
+  <rect x="444" y="176" width="190" height="30" rx="6" fill="#1d4ed8"/>
+  <text x="539" y="196" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" font-weight="700" fill="#ffffff">Push to Staging Dashboard</text>
+  <text x="444" y="222" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#64748b">Preview first; a backup is written before the CSV changes.</text>
+
+  <!-- Confirmation panel -->
+  <rect x="244" y="236" width="712" height="300" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="260" y="264" font-family="Red Hat Display, Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#0f172a">Push this run to the staging dashboard?</text>
+
+  <text x="260" y="290" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" font-weight="700" fill="#475569">Dashboard UUID</text>
+  <text x="370" y="290" font-family="Menlo, Consolas, monospace" font-size="10" fill="#0f172a">4f1c9a2e-8d21-4b7a-9c1e-2f6a8b3d5e70</text>
+
+  <text x="260" y="312" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" font-weight="700" fill="#475569">MLflow run</text>
+  <text x="370" y="312" font-family="Menlo, Consolas, monospace" font-size="10" fill="#0f172a">a1b2c3d4e5f60718293a4b5c6d7e8f90</text>
+
+  <text x="260" y="334" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" font-weight="700" fill="#475569">Target</text>
+  <text x="370" y="334" font-family="Menlo, Consolas, monospace" font-size="8.5" fill="#0f172a">s3://psap-dashboard-data/staging/rhaiis-dashboard/consolidated_dashboard.csv</text>
+
+  <text x="260" y="356" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" font-weight="700" fill="#475569">Rows to add</text>
+  <text x="370" y="356" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#0f172a">3 rows (0 already present)</text>
+
+  <!-- Preview table -->
+  <text x="260" y="382" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" letter-spacing="0.6" fill="#64748b">PREVIEW</text>
+  <text x="260" y="404" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#64748b">UUID</text>
+  <text x="380" y="404" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#64748b">MODEL</text>
+  <text x="566" y="404" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#64748b">PROFILE</text>
+  <text x="646" y="404" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#64748b">VERSION</text>
+  <text x="866" y="404" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#64748b">ACTION</text>
+  <line x1="260" y1="410" x2="940" y2="410" stroke="#e2e8f0"/>
+
+  <text x="260" y="430" font-family="Menlo, Consolas, monospace" font-size="9" fill="#334155">4f1c9a2e-...</text>
+  <text x="380" y="430" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">openai/gpt-oss-120b</text>
+  <text x="566" y="430" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile5</text>
+  <text x="646" y="430" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
+  <text x="866" y="430" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#15803d">add</text>
+
+  <text x="260" y="454" font-family="Menlo, Consolas, monospace" font-size="9" fill="#334155">4f1c9a2e-...</text>
+  <text x="380" y="454" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">nvidia/Nemotron-3-Super</text>
+  <text x="566" y="454" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile6</text>
+  <text x="646" y="454" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
+  <text x="866" y="454" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#15803d">add</text>
+
+  <rect x="700" y="492" width="64" height="26" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="732" y="509" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">Cancel</text>
+  <rect x="774" y="492" width="100" height="26" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="824" y="509" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">Preview (dry run)</text>
+  <rect x="884" y="492" width="56" height="26" rx="6" fill="#1d4ed8"/>
+  <text x="912" y="509" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#ffffff">Push</text>
+
+  <text x="260" y="520" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#94a3b8">Backup: staging/rhaiis-dashboard/backups/consolidated_dashboard-20261103T102233Z.csv</text>
+</svg>
