@@ -92,6 +92,9 @@
   <rect x="244" y="360" width="712" height="190" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
   <text x="260" y="384" font-family="Red Hat Display, Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#0f172a">Preview</text>
   <text x="316" y="384" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#64748b">Nothing writes until Apply.</text>
+  <rect x="740" y="374" width="150" height="20" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="750" y="388" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">Profiles: all</text>
+  <text x="878" y="388" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#64748b">&#9662;</text>
 
   <text x="260" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">UUID</text>
   <text x="380" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">MODEL</text>

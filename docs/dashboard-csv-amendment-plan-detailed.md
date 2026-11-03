@@ -144,13 +144,13 @@ The preview table displays the same value, and the audit row stores the full act
 
 ```json
 POST /dashboard-csv/version
-{"uuids": ["4f1c9a2e-..."], "version": "vLLM-0.24.0-benchmark", "dry_run": false}
+{"uuids": ["4f1c9a2e-..."], "version": "vLLM-0.24.0-benchmark", "profiles": ["profile5"], "dry_run": false}
 
 POST /dashboard-csv/delete
-{"uuids": ["4f1c9a2e-..."], "dry_run": false}
+{"uuids": ["4f1c9a2e-..."], "profiles": ["profile5", "profile6"], "dry_run": false}
 
 POST /dashboard-csv/import
-{"run_id": "a1b2c3d4e5f6...", "mode": "skip", "dry_run": false}
+{"run_id": "a1b2c3d4e5f6...", "mode": "skip", "profiles": ["profile5"], "dry_run": false}
 {"run_url": "https://mlflow.../#/experiments/116/runs/...", "mode": "replace"}
 {"uuid": "4f1c9a2e-...", "mode": "replace_run", "dry_run": true}
 
@@ -204,7 +204,8 @@ text.
 Two keys matter:
 
 **Run key:** `uuid`. One test-phase run produces several rows, all sharing the
-UUID.
+UUID. A run may cover several profiles; each profile contributes one row per
+concurrency level.
 
 **Result key:** the dashboard's logical identity for one benchmark point. It
 excludes `uuid` and includes the configuration and workload:
@@ -241,6 +242,33 @@ admin-only. The audit row records the mode and the replaced UUIDs.
 If the version label is what changed, use **Rename version** first or **Replace
 this run only**; **Replace matching** keys on the current version and will not
 find rows under a different label.
+
+### Scenarios
+
+One UUID is not one row. A single test-phase run can cover several workload
+profiles, and each profile has one row per concurrency level. All rows from that
+run share the UUID, version, model, and `run` label; they differ by
+`prompt toks`/`output toks` (the profile) and `intended concurrency`.
+
+| Scenario | `skip` | `replace` | `replace_run` |
+|---|---|---|---|
+| Same UUID, all imported rows already present | Leaves every row; adds none | Removes matching rows, adds them back | Removes all rows for the UUID, adds the imported set |
+| Same UUID, import has fewer profiles than the CSV | Leaves existing rows; adds missing rows | Replaces matching rows; leaves extra profiles alone | Removes all rows for the UUID, including extra profiles, then adds the imported set |
+| New UUID, same version/model/profile/concurrency as an old UUID | Leaves the old UUID's row; skips the new one | Removes the old UUID's row, adds the new UUID's row | Removes rows for the new UUID (none), adds the new row; the old UUID's row remains |
+| New UUID, partial overlap with old UUIDs | Adds only the non-matching rows | Replaces matching old rows, adds new rows | Adds all new rows; old UUID rows remain |
+| New UUID, no overlap | Adds all rows | Adds all rows | Adds all rows |
+| Different version label | No match; adds all rows | No match; adds all rows | Adds all rows; use Rename first or replace_run on the old UUID |
+
+### Profile scope
+
+The import input is a run, not a profile: it resolves to every row the run
+produced. The preview lists each row with its profile and concurrency, and the
+optional `profiles` filter narrows the operation to selected profiles (omitted or
+empty means all profiles). A profile selection includes every concurrency row for
+that profile. Rename and delete accept the same optional filter for their UUIDs.
+
+The CSV has no separate profile column; the preview derives it from
+`prompt toks`/`output toks` (the same mapping the regression code uses).
 
 ### MLflow import
 
@@ -331,9 +359,12 @@ an admin. Three sections:
   typing `DELETE`. The result reports the backup key and row count removed.
 
 Every action shows rows before/after, rows affected, ETag change, and the S3
-backup path. The preview table includes **Requested by**, the signed-in admin's
-username; the server derives it from the session, never from the request body. No
-silent success toast: the counts are the confirmation.
+backup path. The preview header has a **Profiles** filter (default all profiles);
+selecting one includes all its concurrency rows. The preview rows show `add`,
+`skip`, or `replace` and name the old UUID for a replace. The preview table
+includes **Requested by**, the signed-in admin's username; the server derives it
+from the session, never from the request body. No silent success toast: the counts
+are the confirmation.
 
 ### Wiring
 
@@ -466,6 +497,8 @@ merge before the deployment secret because the endpoints stay dark until
   returns 404.
 - **Result key:** same version/model/profile/concurrency matches across UUIDs;
   different concurrency or version does not.
+- **Profiles filter:** omitted means all profiles; selecting one affects every
+  concurrency row for that profile and leaves other profiles untouched.
 - **Concurrency:** a stale ETag causes one retry and preserves both writers'
   changes; exhausting retries returns 412 and leaves the object unchanged.
 - **Mapping:** live annotation, archived `relevantDeployments[].runUUID`,

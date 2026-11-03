@@ -62,6 +62,11 @@ then writes the new UUID's rows. *Replace this run only* removes all rows for th
 imported UUID. The default is skip; replace is explicit and previewed, and the
 preview names the old UUIDs that will be removed.
 
+One UUID is not one row: a run can cover several profiles, and each profile has
+several concurrency points. The preview lists every row, and the **Profiles**
+filter narrows the operation. By default every profile in the run/UUID is in
+scope.
+
 ## How it works
 
 1. **One key.** The CSV `uuid` is `tests.rhaiis.run_uuid`. Live jobs expose it as
