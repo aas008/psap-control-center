@@ -111,12 +111,15 @@ GET /api/v1/fournos/jobs/forge-rhaiis-xyz/dashboard-state
 {
   "status": "ok",
   "dry_run": false,
-  "action": "rename_version",
+  "action": "import_run",
   "requested_by": "aansharm",
   "run_uuids": ["4f1c9a2e-..."],
+  "mode": "replace",
+  "replaced_uuids": ["8b2d7c11-..."],
   "rows_before": 1284,
-  "rows_after": 1284,
+  "rows_after": 1285,
   "rows_affected": 3,
+  "rows_replaced": 2,
   "rows_skipped": 0,
   "backup_key": "staging/rhaiis-dashboard/backups/consolidated_dashboard-20261103T102233Z.csv",
   "etag_before": "\"9f2c...\"",
@@ -147,12 +150,12 @@ POST /dashboard-csv/delete
 {"uuids": ["4f1c9a2e-..."], "dry_run": false}
 
 POST /dashboard-csv/import
-{"run_id": "a1b2c3d4e5f6...", "mode": "append", "dry_run": false}
-{"run_url": "https://mlflow.../#/experiments/116/runs/...", "mode": "append"}
-{"uuid": "4f1c9a2e-...", "mode": "replace", "dry_run": true}
+{"run_id": "a1b2c3d4e5f6...", "mode": "skip", "dry_run": false}
+{"run_url": "https://mlflow.../#/experiments/116/runs/...", "mode": "replace"}
+{"uuid": "4f1c9a2e-...", "mode": "replace_run", "dry_run": true}
 
 POST /jobs/forge-rhaiis-xyz/push-dashboard
-{"mode": "append", "dry_run": false}
+{"mode": "replace", "dry_run": false}
 ```
 
 ### Errors
@@ -162,7 +165,6 @@ POST /jobs/forge-rhaiis-xyz/push-dashboard
 | `400` | Invalid UUID format, empty/oversized version, empty list, or too many UUIDs. |
 | `403` | Authenticated but not an admin. |
 | `404` | UUID not in CSV, MLflow run not found, or run has no `dashboard.csv`. |
-| `409` | Import found existing rows and `mode=append` would duplicate them. |
 | `412` | ETag conflict survived the retry budget. |
 | `503` | Dashboard S3 or MLflow is not configured. |
 
@@ -199,29 +201,46 @@ text.
 
 ### Row identity
 
-A run can contribute several rows: one per model and profile. The dedupe key must
-include the profile identity, not just the UUID:
+Two keys matter:
+
+**Run key:** `uuid`. One test-phase run produces several rows, all sharing the
+UUID.
+
+**Result key:** the dashboard's logical identity for one benchmark point. It
+excludes `uuid` and includes the configuration and workload:
 
 ```
-uuid, model, prompt toks, output toks, intended concurrency,
-request_type, turns, prefix_tokens, prefix_count
+run, version, model, accelerator, TP, DP, prompt toks, output toks,
+intended concurrency, request_type, turns, prefix_tokens, prefix_count
 ```
+
+`run` carries the accelerator/cluster/model/TP display name. If the dashboard
+treats `runtime_args`, `image_tag`, `spec_decoding`, or `prefix_caching` as part
+of the result identity, add them here; confirm with the dashboard owner before
+implementation.
 
 Rows with an empty `uuid` are historical or malformed; never match them by UUID
 and never delete them implicitly.
 
 ### Import modes
 
-- **Skip existing (`append`):** compute the row key for each imported row. If a
-  row with the same key already exists, leave it unchanged and count it as
-  skipped; append the rest. Use this when the CSV already has an older push of the
-  same run.
-- **Replace existing (`replace`):** remove every row for the resolved UUID(s)
-  first, then append the imported set. Use this when MLflow has corrected metrics
-  or the version label and the dashboard should reflect the new export.
-- Existing is determined by the composite row key, not the UUID alone, because one
-  run has several profile rows. `replace` removes the whole UUID's rows, not just
-  the keys present in the import.
+- **Skip existing (`skip`):** compute the result key for each imported row. If any
+  existing row has the same result key, under any UUID, leave it unchanged and
+  count it as skipped; append the rest. This prevents duplicate logical results.
+- **Replace matching (`replace`):** remove every existing row whose result key
+  matches an imported row, under any UUID, then append the imported rows. This is
+  the cross-UUID supersede: a new UUID replaces the old UUID's rows for the same
+  version/model/profile/concurrency. The preview names the old UUIDs and counts.
+- **Replace this run only (`replace_run`):** remove every row for the imported
+  UUID(s), then append. Use for cleaning up a specific run without touching other
+  UUIDs.
+
+The default is `skip`. `replace` and `replace_run` are explicit, previewed, and
+admin-only. The audit row records the mode and the replaced UUIDs.
+
+If the version label is what changed, use **Rename version** first or **Replace
+this run only**; **Replace matching** keys on the current version and will not
+find rows under a different label.
 
 ### MLflow import
 
@@ -234,7 +253,8 @@ and never delete them implicitly.
    size is under the configured per-file limit. Download with `/get-artifact`.
 4. Parse and merge every selected file. Deduplicate by the row key. If no artifact
    is found, return 404 with the run ID and a hint to push the run through Forge.
-5. Apply `append` or `replace`, then use the same conditional write path.
+5. Apply the selected mode (`skip`, `replace`, or `replace_run`), then use the
+   same conditional write path.
 
 ### Configuration
 
@@ -303,9 +323,10 @@ an admin. Three sections:
   line; blank lines are ignored) and a new version label. Preview counts matching
   rows and shows a sample. Apply writes `version` only.
 - **Import from MLflow:** run ID, run URL, or dashboard UUID. **Skip existing**
-  keeps rows already present and appends only missing ones; **replace existing**
-  removes the run's current rows first. Preview lists added, skipped, and replaced
-  rows.
+  keeps rows already present for the same result; **replace matching** removes
+  those rows under any UUID and adds the new UUID's rows; **replace this run
+  only** removes all rows for the imported UUID. Preview lists added, skipped,
+  and replaced rows, and names the old UUIDs.
 - **Delete rows:** one dashboard UUID per line. Preview first; apply requires
   typing `DELETE`. The result reports the backup key and row count removed.
 
@@ -439,8 +460,12 @@ merge before the deployment secret because the endpoints stay dark until
   dry-run writes nothing; empty and oversized versions are rejected.
 - **Delete:** matching rows disappear; empty-UUID rows are untouched; dry-run
   writes nothing; the backup is created before the write.
-- **Import:** append skips existing keys; replace removes the resolved UUID's rows
-  first; multiple artifacts merge and dedupe; missing artifact returns 404.
+- **Import:** skip keeps rows with the same result key under any UUID; replace
+  removes matching result keys across UUIDs; replace_run removes only the
+  imported UUID's rows; multiple artifacts merge and dedupe; missing artifact
+  returns 404.
+- **Result key:** same version/model/profile/concurrency matches across UUIDs;
+  different concurrency or version does not.
 - **Concurrency:** a stale ETag causes one retry and preserves both writers'
   changes; exhausting retries returns 412 and leaves the object unchanged.
 - **Mapping:** live annotation, archived `relevantDeployments[].runUUID`,
@@ -485,6 +510,8 @@ tests; this feature should add focused tests to those totals.
 | Do we need the optional MLflow tag? | Skip initially; add only if old or incomplete job records are common | The job annotation/status plus `mlflow_url` cover the normal flow. |
 | What does "UUID" mean in the UI? | Dashboard UUID by default; MLflow run ID/URL also accepted for import | The CSV key is the dashboard UUID. Requiring only the MLflow run ID makes rename and delete awkward. |
 | Import when rows already exist | Skip by default; replace is explicit | A re-push should not duplicate rows. Replace is available for corrected results. |
+| Result key columns | `version`, `model`, `accelerator`, `TP`, `DP`, prompt/output tokens, concurrency, request type/turns/prefix fields | Must match what the staging dashboard treats as one result; confirm whether `runtime_args`/`image_tag` also belong. |
+| Job-detail default when a matching result exists | Prompt to replace; do not silently skip | The new run usually supersedes the old one, but the old UUID must be shown first. |
 | Rename scope | All rows for each UUID | Matches the issue wording and keeps a run's version consistent. Per-profile editing can come later. |
 | Feature placement | Admin-only `Dashboard CSV` tab plus the job-detail button | The tab handles corrections across runs; the button handles the original #94 case in context. |
 | Audit retention | Keep rows indefinitely; back up the CSV on every mutation | Storage cost is small; the backup key is the practical rollback path. |

@@ -7,7 +7,7 @@
 | Operation | Input | What changes |
 |---|---|---|
 | **Rename version** | One or more dashboard UUIDs + new label | `version` on every row for those UUIDs |
-| **Import from MLflow** | MLflow run ID/URL, or a dashboard UUID | Adds the run's rows; skip or replace existing |
+| **Import from MLflow** | MLflow run ID/URL, or a dashboard UUID | Adds the run's rows; skip, replace matching, or replace this run only |
 | **Delete rows** | One or more dashboard UUIDs | Removes every row for those UUIDs |
 
 ## The vision
@@ -55,9 +55,12 @@ line. Blank lines are ignored. The preview table shows the signed-in admin as
 **Requested by**; the server derives that username from the session, never from
 the request body.
 
-**Import modes:** *Skip existing* keeps any row already present for that UUID and
-only appends missing rows. *Replace existing* removes the run's current rows and
-writes the imported set. The default is skip; replace is explicit and previewed.
+**Import modes:** *Skip existing* keeps any row already present for that
+version/model/profile (and concurrency) and only appends missing rows. *Replace
+matching* removes those existing rows even when they came from a different UUID,
+then writes the new UUID's rows. *Replace this run only* removes all rows for the
+imported UUID. The default is skip; replace is explicit and previewed, and the
+preview names the old UUIDs that will be removed.
 
 ## How it works
 

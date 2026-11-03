@@ -66,11 +66,13 @@
   <text x="494" y="190" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#64748b">Add the rows a run exported to MLflow.</text>
   <rect x="494" y="202" width="196" height="24" rx="5" fill="#f8fafc" stroke="#cbd5e1"/>
   <text x="502" y="217" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#94a3b8">Run ID / URL or dashboard UUID</text>
-  <circle cx="499" cy="244" r="4.5" fill="#1d4ed8" stroke="#1d4ed8"/>
-  <circle cx="499" cy="244" r="1.8" fill="#ffffff"/>
-  <text x="510" y="247" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">Skip existing rows</text>
-  <circle cx="499" cy="264" r="4.5" fill="#ffffff" stroke="#94a3b8"/>
-  <text x="510" y="267" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">Replace existing rows</text>
+  <circle cx="499" cy="238" r="4.5" fill="#ffffff" stroke="#94a3b8"/>
+  <text x="510" y="241" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">Skip existing results</text>
+  <circle cx="499" cy="256" r="4.5" fill="#1d4ed8" stroke="#1d4ed8"/>
+  <circle cx="499" cy="256" r="1.8" fill="#ffffff"/>
+  <text x="510" y="259" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">Replace matching results</text>
+  <circle cx="499" cy="274" r="4.5" fill="#ffffff" stroke="#94a3b8"/>
+  <text x="510" y="277" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">Replace this run only</text>
   <rect x="494" y="306" width="64" height="24" rx="5" fill="#1d4ed8"/>
   <text x="526" y="322" text-anchor="middle" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#ffffff">Preview</text>
 
@@ -104,14 +106,14 @@
   <text x="540" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile5, profile6</text>
   <text x="630" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
   <text x="760" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">aansharm</text>
-  <text x="876" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#15803d">rename 3 rows</text>
+  <text x="876" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#b45309">replace (2)</text>
 
   <text x="260" y="458" font-family="Menlo, Consolas, monospace" font-size="9" fill="#334155">8b2d7c11-...</text>
   <text x="380" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">nvidia/Nemotron-3-Super</text>
   <text x="540" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile5</text>
   <text x="630" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
   <text x="760" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">aansharm</text>
-  <text x="876" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#b42318">delete 2 rows</text>
+  <text x="876" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#15803d">add 1 row</text>
 
   <text x="260" y="482" font-family="Menlo, Consolas, monospace" font-size="9" fill="#334155">c3e4f5a6-...</text>
   <text x="380" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">openai/gpt-oss-120b</text>
@@ -121,7 +123,7 @@
   <text x="876" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#15803d">add 1 row</text>
 
   <rect x="260" y="510" width="680" height="26" rx="5" fill="#eef2f7"/>
-  <text x="268" y="527" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#475569">Rows before 1,284 &#8594; after 1,284 &#183; 6 affected &#183; Backup: staging/rhaiis-dashboard/backups/consolidated_dashboard-20261103T102233Z.csv</text>
+  <text x="268" y="527" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#475569">Rows before 1,284 &#8594; after 1,286 &#183; 2 replaced from 8b2d7c11 &#183; 2 added &#183; Backup: staging/rhaiis-dashboard/backups/consolidated_dashboard-20261103T102233Z.csv</text>
 
   <!-- Bottom buttons -->
   <rect x="780" y="566" width="64" height="26" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
