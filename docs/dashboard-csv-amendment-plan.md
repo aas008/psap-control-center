@@ -19,9 +19,17 @@ exported to MLflow. Control Center reads the CSV, resolves the run, previews the
 change, writes a backup, and updates S3. The staging dashboard picks up the change
 on its next read.
 
-The CSV `uuid` is Forge's own `run_uuid`, not the FournosJob name or the MLflow run
-ID. The job carries it as the `rhaiis.run-uuid` annotation and in its status, so
-Control Center can resolve it without a new tag.
+The same run has different names in each system:
+
+| System | Identifier | Example |
+|---|---|---|
+| Fournos | Job name | `forge-rhaiis-gpt-oss-120b-7f3c` |
+| MLflow | Run ID | `a1b2c3d4e5f60718293a4b5c6d7e8f90` |
+| Dashboard | `uuid` | `4f1c9a2e-...` (Forge's `run_uuid`) |
+
+The dashboard `uuid` is the join key. It is not the FournosJob name or the MLflow
+run ID; the job carries it as the `rhaiis.run-uuid` annotation and in its status,
+so Control Center can resolve it without a new tag.
 
 ## What the user sees
 

@@ -16,34 +16,50 @@ keyed by the CPT submission UUID and only changes Control Center's grouping. The
 CSV operation is keyed by the CSV `uuid` column and changes the row the staging
 dashboard reads. Do not reuse the CPT endpoint.
 
-The CSV `uuid` is a third identifier: Forge generates it as
-`tests.rhaiis.run_uuid` (a random UUID unless configured). It is not the
-FournosJob name, the Kubernetes UID, or the MLflow run ID. That is why the mapping
-table below matters.
+## 1. One run, several identifiers
 
-## 1. Identifiers
+The same run has a different identifier in each system. The dashboard's `uuid`
+column is the only one the CSV cares about; it is not the FournosJob name, the
+Kubernetes UID, or the MLflow run ID.
 
-The issue's "UUID" covers more than one identifier. The contract must be explicit
-so the UI and API never edit the wrong record.
+### Example
 
-| Identifier | Where it lives | Stable? | Use |
-|---|---|---|---|
-| **Dashboard UUID** | CSV `uuid` column; live FournosJob annotation `rhaiis.run-uuid`; archived `fjob_status.engineStatus.forge.relevantDeployments[].runUUID` | Yes, per test-phase run | Primary key for rename, import, delete. One UUID covers all rows for that run. |
-| **MLflow run ID** | `FournosJob.mlflow_url`; live status `exportArtifacts...mlflow.run_url` | Yes | Fetch the run's `dashboard.csv`. Accept a run URL or raw ID. |
-| **CSV `mlflow_run_id` column** | Dashboard row itself | Not reliable | Secondary hint only. The CSV is generated before the export step, so it can be blank on the original push. |
-| **CPT `run_id` / `group_id`** | Control Center CPT tracking tables | Yes | CPT grouping only. Never the CSV key. |
-| **FournosJob name** | Kubernetes / archive DB | Yes | UI navigation and audit context, not the row key. |
+| System | Identifier | Example | Unique? | Notes |
+|---|---|---|---|---|
+| Fournos | Job name | `forge-rhaiis-gpt-oss-120b-7f3c` | Yes | What the UI shows and links to. |
+| Fournos | Kubernetes UID | `b6e6...` | Yes | Not used by the dashboard; Control Center stores its own DB id. |
+| Fournos | Annotation `rhaiis.run-uuid` | `4f1c9a2e-...` | Yes | Forge writes it at the start of the test phase. |
+| Fournos | `relevantDeployments[].runUUID` | `4f1c9a2e-...` | Yes | Same value as the annotation, in the job status. |
+| Forge | `tests.rhaiis.run_uuid` | `4f1c9a2e-...` | Yes | Random `uuid4()` unless configured; becomes the CSV `uuid`. |
+| Dashboard | CSV `uuid` | `4f1c9a2e-...` | Yes | Groups all rows from one test-phase run. |
+| Dashboard | CSV `mlflow_run_id` column | `a1b2...` or blank | Not reliable | Generated before export; can be empty on the original push. |
+| Dashboard | CSV `run` column | `H200-zeus-openai/gpt-oss-120b-2` | No | Display name; one run has several rows. |
+| MLflow | Run ID | `a1b2c3d4e5f60718293a4b5c6d7e8f90` | Yes | Appears in `/runs/<id>` and the API. |
+| MLflow | Run name | `forge-rhaiis-gpt-oss-120b-7f3c` | No | Defaults to `FJOB_NAME`; reruns can reuse it. |
+| MLflow | Experiment ID | `116` | No | Groups runs; not unique per run. |
+| MLflow | `fjob.name` tag | `forge-rhaiis-gpt-oss-120b-7f3c` | No | Links the run back to the FournosJob. |
+| Control Center | DB `id` | `9d2e...` | Yes | Internal row id; not the Fournos/K8s UID. |
+| Control Center | `name` | `forge-rhaiis-gpt-oss-120b-7f3c` | Yes | Same as the FournosJob name. |
+| Control Center | `cpt_run_id` / `cpt_group_id` | `...` | Yes | CPT grouping only; never the CSV key. |
+
+### How they connect
+
+- FournosJob **name** -> MLflow run **name** and **`fjob.name`** tag. Both are labels, not unique keys across reruns.
+- FournosJob **`rhaiis.run-uuid` annotation** -> Forge **`tests.rhaiis.run_uuid`** -> CSV **`uuid`** -> **`deployment_uuid`** / **`relevantDeployments[].runUUID`**.
+- FournosJob **`mlflow_url`** (or live `exportArtifacts...mlflow.run_url`) -> MLflow **run ID**. Parse the ID from the URL.
+- CSV **`mlflow_run_id`** column is supposed to mirror the MLflow run ID, but the CSV is generated before export, so it can be blank on the original push. Do not use it as the join key.
+- Control Center **`cpt_run_id` / `cpt_group_id`** are local to CPT grouping; they are not the FournosJob name or the CSV `uuid`.
 
 ### Mapping rule
 
-1. Job detail push: resolve the dashboard UUID from the live annotation first,
-   then from archived `fjob_status`.
-2. Resolve the MLflow run from `mlflow_url`, then from the live export status.
-   Parse the run ID from the URL; do not assume the latest run.
-3. Admin import by dashboard UUID: look up the indexed `fournos_jobs.run_uuid`
-   column. If empty, derive it from `fjob_status`. Only if both are missing, fall
-   back to an MLflow search on the optional `rhaiis.run_uuid` tag.
+1. Job detail push: read `rhaiis.run-uuid` from the live FournosJob annotation; if absent, read `relevantDeployments[].runUUID` from the archived `fjob_status`.
+2. Resolve the MLflow run from `mlflow_url`, then from the live export status. Parse the run ID from the URL.
+3. Admin import by dashboard UUID: look up the new indexed `fournos_jobs.run_uuid` column; if empty, derive it from `fjob_status`. Only if both are missing, fall back to an MLflow search on the optional `rhaiis.run_uuid` tag.
 4. If none resolve, return 404 naming the missing link; never guess a run.
+
+Could Forge just write the FournosJob name into the CSV `uuid`? That would change a
+value already used for the deployment UUID, S3 log keys, and agent analysis
+artifacts; existing rows would not match. The annotation/status bridge avoids that.
 
 Add `fournos_jobs.run_uuid` (`VARCHAR(64)`, indexed) and populate it in the
 watcher and history backfill. Without it, an import by UUID must scan JSON status
