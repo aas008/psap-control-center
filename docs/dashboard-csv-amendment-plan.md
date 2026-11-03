@@ -19,6 +19,10 @@ exported to MLflow. Control Center reads the CSV, resolves the run, previews the
 change, writes a backup, and updates S3. The staging dashboard picks up the change
 on its next read.
 
+The CSV `uuid` is Forge's own `run_uuid`, not the FournosJob name or the MLflow run
+ID. The job carries it as the `rhaiis.run-uuid` annotation and in its status, so
+Control Center can resolve it without a new tag.
+
 ## What the user sees
 
 ### Push a finished job
@@ -48,7 +52,8 @@ path. Delete requires typing `DELETE`.
 3. **No lost updates.** Both writers use S3 ETag conditional writes and retry.
    Every Control Center write backs up the CSV first.
 4. **No guessing runs.** Control Center resolves the MLflow run from `mlflow_url`
-   or a new `rhaiis.run_uuid` MLflow tag; if it cannot, it stops and says what is
+   or the job status. The `rhaiis.run_uuid` MLflow tag is an optional fallback for
+   old or incomplete job records; if none resolve, it stops and says what is
    missing.
 5. **Admin only.** Preview, backup, audit, and typed confirmation for destructive
    actions.
@@ -58,13 +63,13 @@ path. Delete requires typing `DELETE`.
 | Side | Changes |
 |---|---|
 | **Control Center** | S3 CSV service, MLflow artifact fetch, admin endpoints, job-detail button, Dashboard CSV tab, audit |
-| **Forge** | Tag runs with `rhaiis.run_uuid`; dedupe and conditional write in `sync_csv_to_s3` |
+| **Forge** | Required: dedupe and conditional write in `sync_csv_to_s3`. Optional: tag runs with `rhaiis.run_uuid` for the fallback lookup. |
 
 ## Delivery
 
 | Step | Outcome |
 |---|---|
-| 0 | Forge tag + safe append |
+| 0 | Forge safe append (optional UUID tag) |
 | 1 | Control Center backend: CSV service + MLflow fetch + tests |
 | 2 | Control Center API: preview, rename, import, delete, audit |
 | 3 | Control Center UI: job button + admin tab |

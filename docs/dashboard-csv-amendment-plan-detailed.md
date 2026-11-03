@@ -16,6 +16,11 @@ keyed by the CPT submission UUID and only changes Control Center's grouping. The
 CSV operation is keyed by the CSV `uuid` column and changes the row the staging
 dashboard reads. Do not reuse the CPT endpoint.
 
+The CSV `uuid` is a third identifier: Forge generates it as
+`tests.rhaiis.run_uuid` (a random UUID unless configured). It is not the
+FournosJob name, the Kubernetes UID, or the MLflow run ID. That is why the mapping
+table below matters.
+
 ## 1. Identifiers
 
 The issue's "UUID" covers more than one identifier. The contract must be explicit
@@ -36,7 +41,8 @@ so the UI and API never edit the wrong record.
 2. Resolve the MLflow run from `mlflow_url`, then from the live export status.
    Parse the run ID from the URL; do not assume the latest run.
 3. Admin import by dashboard UUID: look up the indexed `fournos_jobs.run_uuid`
-   column. If empty, fall back to an MLflow search on the `rhaiis.run_uuid` tag.
+   column. If empty, derive it from `fjob_status`. Only if both are missing, fall
+   back to an MLflow search on the optional `rhaiis.run_uuid` tag.
 4. If none resolve, return 404 naming the missing link; never guess a run.
 
 Add `fournos_jobs.run_uuid` (`VARCHAR(64)`, indexed) and populate it in the
@@ -289,15 +295,21 @@ request body so a dry run and a live run do not share a cache entry.
 
 ## 5. Forge changes
 
-### 1. Tag the MLflow run with the dashboard UUID
+### 1. Tag the MLflow run with the dashboard UUID (optional)
 
-In `projects/rhaiis/orchestration/test_phase.py`, pass `run_uuid` into
-`_set_mlflow_metadata` and add `"rhaiis.run_uuid": run_uuid` to the MLflow tags.
-The existing tag merge in `_inject_fournos_job_tags` keeps these tags intact. This
-gives Control Center a deterministic way to find the MLflow run for a dashboard
-UUID when the job archive has no `mlflow_url`.
+The normal mapping does not need this tag: Control Center reads the UUID from the
+live `rhaiis.run-uuid` annotation or archived `relevantDeployments`, and gets the
+MLflow run from `mlflow_url`. The tag only covers old, backfilled, or incomplete
+job records where those fields are missing, and lets Control Center search MLflow
+directly instead of joining through the job DB.
 
-### 2. Make the append idempotent and conditional
+If that fallback is worth having, pass `run_uuid` into `_set_mlflow_metadata` in
+`projects/rhaiis/orchestration/test_phase.py` and add
+`"rhaiis.run_uuid": run_uuid` to the MLflow tags. The existing tag merge in
+`_inject_fournos_job_tags` keeps these tags intact. Skip it if the job archive is
+complete enough for the lookup.
+
+### 2. Make the append idempotent and conditional (required)
 
 In `projects/rhaiis/postprocess/s3_dashboard.py`, change `sync_csv_to_s3` from
 download -> concat -> unconditional upload to:
@@ -366,7 +378,7 @@ because that branch rewrites `Testing.tsx`, `TestingJobDetail.tsx`, and
 
 | Phase | Side | Scope | Files |
 |---|---|---|---|
-| 0 | Forge | Tag MLflow runs with `rhaiis.run_uuid`; dedupe + conditional append; tests. | `test_phase.py`, `s3_dashboard.py`, tests |
+| 0 | Forge | Required: dedupe + conditional append; tests. Optional: tag MLflow runs with `rhaiis.run_uuid`. | `test_phase.py`, `s3_dashboard.py`, tests |
 | 1 | CC | Config, `run_uuid` column/index, S3 store, CSV ops, MLflow artifact service, job-link resolver, unit tests with an in-memory store. | `config.py`, `fournos_job.py`, `database.py`, `dashboard_csv.py`, `mlflow_artifacts.py`, `dashboard_job_link.py`, tests |
 | 2 | CC | Router, schemas, admin auth, dry-run, error mapping, audit model/endpoint, integration tests. | `api/dashboard_csv.py`, `schemas/fournos.py`, `dashboard_csv_audit.py`, tests |
 | 3 | CC | Job-detail push action, admin `Dashboard CSV` tab, hooks/types/API methods, nav entry, component tests. | `TestingJobDetail.tsx`, `DashboardCsvPanel.tsx`, `Testing.tsx`, `Layout.tsx`, `useFournos.ts`, `api.ts`, `types/index.ts` |
@@ -428,6 +440,7 @@ tests; this feature should add focused tests to those totals.
 | Decision | Recommendation | Why |
 |---|---|---|
 | Where do S3 write credentials live? | Control Center runtime secret | Interactive operations need direct writes. If policy forbids it, fall back to a Forge batch job. |
+| Do we need the optional MLflow tag? | Skip initially; add only if old or incomplete job records are common | The job annotation/status plus `mlflow_url` cover the normal flow. |
 | What does "UUID" mean in the UI? | Dashboard UUID by default; MLflow run ID/URL also accepted for import | The CSV key is the dashboard UUID. Requiring only the MLflow run ID makes rename and delete awkward. |
 | Import when rows already exist | Skip by default; replace is explicit | A re-push should not duplicate rows. Replace is available for corrected results. |
 | Rename scope | All rows for each UUID | Matches the issue wording and keeps a run's version consistent. Per-profile editing can come later. |
@@ -438,7 +451,7 @@ tests; this feature should add focused tests to those totals.
 
 | Repo | File | Change |
 |---|---|---|
-| Forge | `projects/rhaiis/orchestration/test_phase.py` | Modify: pass `run_uuid` to `_set_mlflow_metadata`; add tag. |
+| Forge | `projects/rhaiis/orchestration/test_phase.py` | Optional: pass `run_uuid` to `_set_mlflow_metadata`; add tag. |
 | Forge | `projects/rhaiis/postprocess/s3_dashboard.py` | Modify: dedupe, ETag conditional write, retry, backup. |
 | CC | `backend/app/services/dashboard_csv.py` | New: S3 store, CSV operations, ETag cache. |
 | CC | `backend/app/services/mlflow_artifacts.py` | New: bounded artifact traversal/download. |
