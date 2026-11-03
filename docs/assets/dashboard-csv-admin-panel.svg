@@ -53,7 +53,8 @@
   <text x="258" y="174" font-family="Red Hat Display, Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#0f172a">Rename version</text>
   <text x="258" y="190" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#64748b">Update the version label for a run.</text>
   <rect x="258" y="202" width="196" height="44" rx="5" fill="#f8fafc" stroke="#cbd5e1"/>
-  <text x="266" y="219" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#94a3b8">UUIDs, one per line</text>
+  <text x="266" y="218" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#94a3b8">One dashboard UUID per line</text>
+  <text x="266" y="232" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="7.5" fill="#94a3b8">Each line is one run.</text>
   <rect x="258" y="254" width="196" height="24" rx="5" fill="#f8fafc" stroke="#cbd5e1"/>
   <text x="266" y="269" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#94a3b8">New version label</text>
   <rect x="258" y="306" width="64" height="24" rx="5" fill="#1d4ed8"/>
@@ -78,7 +79,8 @@
   <text x="730" y="174" font-family="Red Hat Display, Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#0f172a">Delete rows</text>
   <text x="730" y="190" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#64748b">Remove every row for a run.</text>
   <rect x="730" y="202" width="196" height="44" rx="5" fill="#f8fafc" stroke="#cbd5e1"/>
-  <text x="738" y="219" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#94a3b8">UUIDs, one per line</text>
+  <text x="738" y="218" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#94a3b8">One dashboard UUID per line</text>
+  <text x="738" y="232" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="7.5" fill="#94a3b8">Each line is one run.</text>
   <text x="730" y="264" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#b42318">Type DELETE to confirm</text>
   <rect x="730" y="272" width="196" height="24" rx="5" fill="#f8fafc" stroke="#cbd5e1"/>
   <rect x="730" y="306" width="64" height="24" rx="5" fill="#b42318"/>
@@ -91,28 +93,32 @@
 
   <text x="260" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">UUID</text>
   <text x="380" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">MODEL</text>
-  <text x="560" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">PROFILES</text>
-  <text x="646" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">VERSION</text>
-  <text x="846" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">ACTION</text>
+  <text x="540" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">PROFILES</text>
+  <text x="630" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">VERSION</text>
+  <text x="760" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">REQUESTED BY</text>
+  <text x="876" y="408" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" font-weight="700" fill="#64748b">ACTION</text>
   <line x1="260" y1="414" x2="940" y2="414" stroke="#e2e8f0"/>
 
   <text x="260" y="434" font-family="Menlo, Consolas, monospace" font-size="9" fill="#334155">4f1c9a2e-...</text>
   <text x="380" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">openai/gpt-oss-120b</text>
-  <text x="560" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile5, profile6</text>
-  <text x="646" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
-  <text x="846" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#15803d">rename 3 rows</text>
+  <text x="540" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile5, profile6</text>
+  <text x="630" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
+  <text x="760" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">aansharm</text>
+  <text x="876" y="434" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#15803d">rename 3 rows</text>
 
   <text x="260" y="458" font-family="Menlo, Consolas, monospace" font-size="9" fill="#334155">8b2d7c11-...</text>
   <text x="380" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">nvidia/Nemotron-3-Super</text>
-  <text x="560" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile5</text>
-  <text x="646" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
-  <text x="846" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#b42318">delete 2 rows</text>
+  <text x="540" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile5</text>
+  <text x="630" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
+  <text x="760" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">aansharm</text>
+  <text x="876" y="458" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#b42318">delete 2 rows</text>
 
   <text x="260" y="482" font-family="Menlo, Consolas, monospace" font-size="9" fill="#334155">c3e4f5a6-...</text>
   <text x="380" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">openai/gpt-oss-120b</text>
-  <text x="560" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile6</text>
-  <text x="646" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
-  <text x="846" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#15803d">add 1 row</text>
+  <text x="540" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">profile6</text>
+  <text x="630" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">vLLM-0.24.0-benchmark</text>
+  <text x="760" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" fill="#334155">aansharm</text>
+  <text x="876" y="482" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" fill="#15803d">add 1 row</text>
 
   <rect x="260" y="510" width="680" height="26" rx="5" fill="#eef2f7"/>
   <text x="268" y="527" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="8.5" fill="#475569">Rows before 1,284 &#8594; after 1,284 &#183; 6 affected &#183; Backup: staging/rhaiis-dashboard/backups/consolidated_dashboard-20261103T102233Z.csv</text>

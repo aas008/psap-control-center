@@ -112,6 +112,7 @@ GET /api/v1/fournos/jobs/forge-rhaiis-xyz/dashboard-state
   "status": "ok",
   "dry_run": false,
   "action": "rename_version",
+  "requested_by": "aansharm",
   "run_uuids": ["4f1c9a2e-..."],
   "rows_before": 1284,
   "rows_after": 1284,
@@ -130,6 +131,11 @@ GET /api/v1/fournos/jobs/forge-rhaiis-xyz/dashboard-state
   ]
 }
 ```
+
+`requested_by` is the signed-in admin's username. The server derives it from the
+authenticated session (`require_admin`) and never accepts it from the request body.
+The preview table displays the same value, and the audit row stores the full actor
+(username, name, email, subject).
 
 ### Request bodies
 
@@ -170,7 +176,7 @@ POST /jobs/forge-rhaiis-xyz/push-dashboard
 | `backend/app/services/mlflow_artifacts.py` | Bounded artifact traversal and download; reuses `_client_options` and `parse_run_reference`. |
 | `backend/app/services/dashboard_job_link.py` | Resolve a live or archived job to `{run_uuid, mlflow_run_id, mlflow_url}`. |
 | `backend/app/api/dashboard_csv.py` | FastAPI router: validation, auth, error mapping, audit. |
-| `backend/app/models/dashboard_csv_audit.py` | One row per mutation: actor, action, UUIDs, version, counts, ETags, backup key, timestamp. |
+| `backend/app/models/dashboard_csv_audit.py` | One row per mutation: actor (username, name, email, subject), action, UUIDs, version, counts, ETags, backup key, timestamp. |
 
 ### CSV write algorithm
 
@@ -202,9 +208,20 @@ request_type, turns, prefix_tokens, prefix_count
 ```
 
 Rows with an empty `uuid` are historical or malformed; never match them by UUID
-and never delete them implicitly. The importer skips rows whose key already
-exists in `append` mode. In `replace` mode it removes all rows for the resolved
-UUID first, then appends the imported set.
+and never delete them implicitly.
+
+### Import modes
+
+- **Skip existing (`append`):** compute the row key for each imported row. If a
+  row with the same key already exists, leave it unchanged and count it as
+  skipped; append the rest. Use this when the CSV already has an older push of the
+  same run.
+- **Replace existing (`replace`):** remove every row for the resolved UUID(s)
+  first, then append the imported set. Use this when MLflow has corrected metrics
+  or the version label and the dashboard should reflect the new export.
+- Existing is determined by the composite row key, not the UUID alone, because one
+  run has several profile rows. `replace` removes the whole UUID's rows, not just
+  the keys present in the import.
 
 ### MLflow import
 
@@ -282,15 +299,20 @@ Add `frontend/src/components/DashboardCsvPanel.tsx`, modeled on
 `CptJobsPanel.tsx`. It renders when `activeTab === "dashboard-csv"` and the user is
 an admin. Three sections:
 
-- **Rename version:** UUIDs on separate lines, new version label. Preview counts
-  matching rows and shows a sample. Apply writes `version` only.
-- **Import from MLflow:** run ID, run URL, or dashboard UUID. Choose skip existing
-  or replace. Preview lists rows that will be added, skipped, or replaced.
-- **Delete rows:** UUIDs on separate lines. Preview first; apply requires typing
-  `DELETE`. The result reports the backup key and row count removed.
+- **Rename version:** a textarea with one dashboard UUID per line (one run per
+  line; blank lines are ignored) and a new version label. Preview counts matching
+  rows and shows a sample. Apply writes `version` only.
+- **Import from MLflow:** run ID, run URL, or dashboard UUID. **Skip existing**
+  keeps rows already present and appends only missing ones; **replace existing**
+  removes the run's current rows first. Preview lists added, skipped, and replaced
+  rows.
+- **Delete rows:** one dashboard UUID per line. Preview first; apply requires
+  typing `DELETE`. The result reports the backup key and row count removed.
 
 Every action shows rows before/after, rows affected, ETag change, and the S3
-backup path. No silent success toast: the counts are the confirmation.
+backup path. The preview table includes **Requested by**, the signed-in admin's
+username; the server derives it from the session, never from the request body. No
+silent success toast: the counts are the confirmation.
 
 ### Wiring
 
@@ -424,6 +446,8 @@ merge before the deployment secret because the endpoints stay dark until
 - **Mapping:** live annotation, archived `relevantDeployments[].runUUID`,
   `mlflow_url` parsing, and MLflow tag-search fallback.
 - **Auth:** anonymous 401, signed-in non-admin 403, admin 200 for every mutation.
+- **Actor:** `requested_by` matches the authenticated admin; a client-supplied
+  actor field is ignored; the audit row stores the same identity.
 - **Migration:** start from a pre-column SQLite/Postgres schema and verify
   `run_uuid` and its index are added idempotently.
 
@@ -433,6 +457,8 @@ merge before the deployment secret because the endpoints stay dark until
   non-Succeeded jobs; disabled when `already_pushed`.
 - Preview renders the row count and sample; Apply stays disabled until a preview
   exists; delete requires the typed confirmation.
+- Preview shows the signed-in admin as **Requested by**; the value is not
+  editable.
 - Mutation success updates the displayed counts and shows the backup key; failure
   leaves the preview visible with the server message.
 

@@ -50,6 +50,15 @@ The admin **Dashboard CSV** tab has the three operations side by side. Every
 operation is preview-first; the preview shows the rows, the count, and the backup
 path. Delete requires typing `DELETE`.
 
+The UUID fields are textareas: paste one dashboard UUID per line, one run per
+line. Blank lines are ignored. The preview table shows the signed-in admin as
+**Requested by**; the server derives that username from the session, never from
+the request body.
+
+**Import modes:** *Skip existing* keeps any row already present for that UUID and
+only appends missing rows. *Replace existing* removes the run's current rows and
+writes the imported set. The default is skip; replace is explicit and previewed.
+
 ## How it works
 
 1. **One key.** The CSV `uuid` is `tests.rhaiis.run_uuid`. Live jobs expose it as

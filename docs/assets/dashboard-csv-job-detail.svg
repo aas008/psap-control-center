@@ -81,6 +81,8 @@
 
   <text x="260" y="356" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" font-weight="700" fill="#475569">Rows to add</text>
   <text x="370" y="356" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#0f172a">3 rows (0 already present)</text>
+  <text x="700" y="356" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9.5" font-weight="700" fill="#475569">Requested by</text>
+  <text x="790" y="356" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="10" fill="#0f172a">aansharm</text>
 
   <!-- Preview table -->
   <text x="260" y="382" font-family="Red Hat Text, Arial, Helvetica, sans-serif" font-size="9" font-weight="700" letter-spacing="0.6" fill="#64748b">PREVIEW</text>
