@@ -57,6 +57,25 @@ python3 -m venv venv
 - Add field: works. Change `version` keyword → text: rejected; reindex needed.
 - `from: 10000` pagination: rejected by `index.max_result_window`.
 
+## Persistence
+
+The local OpenSearch container now uses a named volume:
+
+```bash
+docker volume create psap-opensearch-data
+# mount it at /usr/share/opensearch/data
+```
+
+Saved objects (the `psap-rhaiis-benchmark-v1` index pattern and the **RHAIIS
+table** saved search) live in OpenSearch’s `.kibana_1` index, so they survive a
+container restart with the volume. Verified after `docker restart
+psap-opensearch`: 35,998 documents and the saved search remained.
+
+In the lab, persistence depends on the OpenSearch cluster’s PVCs, not the
+Dashboards container. Save shared searches in the **Global** tenant (or a shared
+tenant), not a private tenant, so other users can see them. A volume is not a
+backup: use snapshots or saved-object export for that.
+
 ## Caveats
 
 - The Docker index is ephemeral. Add a volume if you want it to survive.
