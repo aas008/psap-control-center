@@ -35,13 +35,13 @@ and tabular, the queries are filters/substring/top-N/groupby, and corrections
 need multi-row atomicity. **Postgres is the lower-risk default; OpenSearch is
 justified as a search/analytics index if full-text/fuzzy search or much larger
 scale becomes the core requirement.** The prototype should benchmark both on the
-same 26,024-row corpus, not assume the winner.
+same corpus (35,998 rows in the current staging object), not assume the winner.
 
 ## Grounded concern matrix
 
 | Concern (speaker) | Verdict | Evidence |
 |---|---|---|
-| **Sai: two jobs finished together, only one reached the dashboard** | **Confirmed.** The write is an unguarded whole-object read-modify-write. | `projects/rhaiis/postprocess/s3_dashboard.py:43-67`: download, `pd.concat`, `upload_file` to one key. No ETag/If-Match, lock, dedupe, or retry. `test_phase.py:630-648` logs sync failure but never raises. AWS: concurrent PUTs are last-writer-wins, no atomic append. |
+| **Sai: two jobs finished together, only one reached the dashboard** | **Confirmed.** The write is an unguarded whole-object read-modify-write. | `projects/rhaiis/postprocess/s3_dashboard.py:43-67`: download, `pd.concat`, `upload_file` to one key. No ETag/If-Match, lock, dedupe, or retry. `test_phase.py:630-648` logs sync failure but never raises. AWS: concurrent PUTs are last-writer-wins, no atomic append. The OpenSearch path removes this by construction: each run writes its own documents (measured 2026-11-10). |
 | **Aanya: 10k+ rows, Google Sheets editing, overwrite risk** | **Confirmed and worse.** | Local snapshot: 26,024 rows, 56 columns, 19 MB, 2,011 non-empty UUIDs, 325 run labels, 109 models, 287 versions. 689 UUIDs span more than one profile; max 5 profiles. |
 | **Harshith: ~8 of 35 MCP tools parse CSV** | **Partially true; wrong numbers and mechanism.** | The MCP server registers **31 tools in 15 modules**, not 35. Exactly **one** module parses CSV (`performance_data_loader.py`). **13 of 31** tools depend on that loader; the 8 are the core performance tools. No tool parses CSV itself. |
 | **Alex: a CSV/JSON adapter makes the backend swap lightweight** | **Partially supported.** It is a read seam, not a full migration. | Dashboard has one read boundary: `read_csv_from_s3` → `load_data()` → one DataFrame. Agent has one loader: `load_rhaiis_data()`. If the adapter returns the same DataFrame/columns, the 13 tools and dashboard pages can keep reading. But the adapter does **not** fix the write race, multi-row corrections/retractions, mapping/schema governance, startup validation, S3-first precedence, cache invalidation, event-loop blocking, substring semantics, or agent prompt wording. |
@@ -157,7 +157,8 @@ substring behavior.
 
 **What it does not solve:**
 
-- the write race and lost updates;
+- the write race and lost updates — those require changing the write path (S3
+  conditional writes, or per-document upsert), not just the read seam;
 - multi-row corrections/retractions and transactional guarantees;
 - mapping/schema governance and reindexing;
 - the agent’s startup validation (`main.py:93-96`) and S3-first precedence;
@@ -375,17 +376,19 @@ TO-BE
 
 ## Recommended sequence (grounded)
 
-1. **Phase 0 — stop the bleeding (days).** Add `If-Match`/ETag conditional write
-   with bounded retry to `sync_csv_to_s3`, or route writes through the
-   deterministic-ID upsert already used by the KPI helper. This removes lost
-   updates; upsert also removes duplicate rows. This is independent of the store
-   choice.
+1. **Phase 0 — stop the bleeding (days).** If the CSV stays authoritative, add
+   `If-Match`/ETag conditional write with bounded retry to `sync_csv_to_s3`.
+   The measured alternative is per-document upsert: the prototype bulk-indexed a
+   per-run `dashboard.csv` with stable IDs in ~30 ms, was idempotent on
+   redelivery, and had no whole-object race. Either removes lost updates;
+   upsert also removes duplicate rows. This is independent of the store choice.
 2. **Phase 1 — store bake-off + adapter (Aanya’s prototype).** Load the same
-   26,024-row corpus into OpenSearch with an explicit mapping and into Postgres
-   with a real schema. Build the CSV/DataFrame adapter once and point it at
-   each. Run the same query corpus: filters, substring, top-N, groupby,
-   pagination/export, concurrent writes, corrections. Measure latency, fidelity,
-   ops effort, and failure modes.
+   corpus into OpenSearch with an explicit mapping and into Postgres with a real
+   schema. Use the current staging corpus (35,998 rows at the time of the
+   prototype; 26,024 in the earlier local snapshot). Build the CSV/DataFrame
+   adapter once and point it at each. Run the same query corpus: filters,
+   substring, top-N, groupby, pagination/export, concurrent writes,
+   corrections. Measure latency, fidelity, ops effort, and failure modes.
 3. **Phase 2 — choose the system of record.** Pick Postgres or OpenSearch based
    on the bake-off, not on availability. Keep the CSV materialized from the
    chosen store so the dashboard and agent remain unchanged.
@@ -428,12 +431,44 @@ local snapshot.
 - Agent:
   - `load_rhaiis_data()` read the round-trip CSV: **35,998 × 57** (the 56
     original columns plus its derived `efficiency_ratio`); no tool changes.
+
+### Incremental per-run onboarding (Forge write path)
+
+Simulated the real Forge flow with a 4-row postprocessing `dashboard.csv` for
+one UUID (`bart-large`, `RHAIIS-3.2.2`, concurrency 10/25/50/100):
+
+| Step | Result |
+|---|---|
+| Remove that UUID's 4 documents (simulate a not-yet-onboarded run) | 35,994 remain, ~30 ms |
+| Regenerate the CSV without the run | 35,994 rows, as expected |
+| `_bulk` the per-run CSV | 4 indexed, 0 errors, ~30 ms |
+| Redeliver the same file twice | 35,998 both times |
+| Regenerate the consolidated CSV from the index | 35,998 rows, ~1.1 s |
+| Compare with the original | same rows ignoring order; the run's 4 rows match |
+
+What this shows: appending a run is **O(rows in that run)**, not O(rows in the
+dataset). Two jobs finishing together write different documents, so the
+whole-object lost update disappears. The deterministic `_id` (content hash plus
+an occurrence suffix for exact duplicates) makes redelivery idempotent.
+
+What it does not show: a per-run batch is **not atomic**. A bulk that fails
+halfway leaves some rows indexed. Retrying is safe because IDs are stable, but
+"replace run" needs `delete_by_query` on `uuid` (optionally plus profile)
+before the bulk, and that pair is not a transaction.
+
 - Hiccups found:
   - `terms` aggregation with a sub-aggregation order is approximate with the
     default `shard_size`; set `shard_size` to at least the number of distinct
     terms.
   - 10,000-document result window; use `search_after`/PIT for full exports.
   - Field type changes require a new index + reindex; adding fields is easy.
+  - A per-run bulk is not atomic; retry is idempotent, but partial batches are
+    possible.
+  - `RHAIIS_FIELDNAMES` emits 54 columns while the consolidated CSV has 56
+    (`turn_index`, `env_vars` are missing). Missing mapped fields are accepted;
+    with `dynamic: strict`, new fields must be added to the mapping first.
+  - `_row_index` exists only to preserve CSV row order for the round-trip
+    check; production ordering needs a real sort key.
   - The Docker container is ephemeral; use a volume before relying on it.
   - The agent loader needs its normal deps (`python-dotenv`, `structlog`) in a
     standalone test venv; production already has them.
@@ -442,8 +477,10 @@ local snapshot.
 
 **Conclusion so far:** OpenSearch is a viable **read store / CSV projection**
 for RHAIIS: it holds the current data, reproduces the CSV exactly, and both the
-dashboard and agent read the projection unchanged. It does not, by itself,
-solve the write race, multi-row corrections, or schema governance.
+dashboard and agent read the projection unchanged. It also removes the
+whole-object lost update for **appends**, because a run writes its own
+documents instead of rewriting one S3 object. It does not solve multi-row
+atomicity for replace/delete operations or schema governance.
 
 ## Multiple projects: cluster, index, alias
 
@@ -518,7 +555,8 @@ index for llm-d plus an alias query across both.
 - **The adapter is a read seam, not a full migration.** It preserves the
   dashboard/agent DataFrame contract; it does not fix the write race,
   multi-row ACID, mapping governance, startup/cache behavior, or substring
-  semantics.
+  semantics. The *write path* is separate: per-document upsert removes the
+  append lost update, but the adapter alone does not.
 - OpenSearch is not schema-free at query time: mappings are mandatory for
   SQL/PPL, field types cannot change in place, and the default field cap is
   1,000.
@@ -556,8 +594,13 @@ Local:
 
 ## Caveats
 
-- Local CSV snapshot is dated 2026-11-03; no live OpenSearch cluster, production
-  dashboard, or S3 access was used.
+- The 26,024-row measurements used a local snapshot dated 2026-11-03. The
+  2026-11-10 prototype used the current staging S3 object (35,998 rows) and a
+  local Docker OpenSearch 3.9.0. No production OpenSearch cluster, lab
+  Dashboards instance, or production dashboard was used.
+- The incremental onboarding result simulates a new run by deleting rows from
+  the already-ingested index. Forge does not call OpenSearch yet; the
+  integration is not implemented.
 - The 7,452 surplus-row figure is an upper bound; only 11 byte-identical groups
   are unambiguous.
 - OpenSearch behavior is version-sensitive: SQL `DELETE` existed in 2.x behind
