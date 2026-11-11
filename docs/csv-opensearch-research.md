@@ -396,6 +396,90 @@ TO-BE
    `query_performance_metrics`, `discover_configurations`, and the dashboard’s
    groupbys.
 
+## Prototype results (2026-11-10)
+
+Local single-node OpenSearch 3.9.0 in Docker, using the **current staging S3
+object** (`staging/rhaiis-dashboard/consolidated_dashboard.csv`), not the stale
+local snapshot.
+
+- CSV shape: **35,998 rows × 56 columns, ~30 MB, 2,267 UUIDs**.
+- Ingest: 35,998 documents in ~5 s; deterministic `_id`; explicit mapping;
+  1 shard, 0 replicas.
+- CSV round-trip: **0 cell mismatches**; same 56 columns, same row order, blanks
+  preserved.
+- Query battery:
+  - Exact version count: **1,829 / 1,829**, ~15 ms.
+  - Case-insensitive wildcard model substring: **3,797 / 3,797**, ~29 ms.
+  - Top-10 throughput: exact match.
+  - Top-10 average throughput by version: exact match **after** setting
+    `shard_size: 1000`; the default `shard_size` returned a partial bucket
+    (`vLLM-0.22.0` doc_count 5 instead of 62).
+  - Rename version values for one UUID: 5 rows updated and verified, ~113 ms.
+  - Re-index the same `_id` twice: count unchanged at 35,998 (idempotent upsert).
+  - Add a new field: works. Change `version` from keyword to text: rejected;
+    needs a new index + reindex.
+  - `from: 10000` pagination: rejected by `index.max_result_window`; the
+    converter uses `search_after`.
+- Dashboard:
+  - Streamlit app on `:8502` with the round-trip CSV and `:8503` with the
+    original S3 CSV.
+  - Both rendered **identical body text** (17,526 chars, same hash) and identical
+    KPI values; no error banners.
+- Agent:
+  - `load_rhaiis_data()` read the round-trip CSV: **35,998 × 57** (the 56
+    original columns plus its derived `efficiency_ratio`); no tool changes.
+- Hiccups found:
+  - `terms` aggregation with a sub-aggregation order is approximate with the
+    default `shard_size`; set `shard_size` to at least the number of distinct
+    terms.
+  - 10,000-document result window; use `search_after`/PIT for full exports.
+  - Field type changes require a new index + reindex; adding fields is easy.
+  - The Docker container is ephemeral; use a volume before relying on it.
+  - The agent loader needs its normal deps (`python-dotenv`, `structlog`) in a
+    standalone test venv; production already has them.
+  - The Streamlit dashboard takes several seconds to load a 30 MB CSV and is
+    blank until then.
+
+**Conclusion so far:** OpenSearch is a viable **read store / CSV projection**
+for RHAIIS: it holds the current data, reproduces the CSV exactly, and both the
+dashboard and agent read the projection unchanged. It does not, by itself,
+solve the write race, multi-row corrections, or schema governance.
+
+## Multiple projects: cluster, index, alias
+
+The terminology matters because Kevin and Avi want this to serve more than
+RHAIIS.
+
+| Term | Meaning | Analogy |
+|---|---|---|
+| **Cluster** | One running OpenSearch service/endpoint | One database server |
+| **Index** | A collection of documents with a mapping | A table |
+| **Document** | One JSON record | A row |
+| **Mapping** | Field names and types | A schema |
+| **Shard** | A partition of an index | A table partition |
+| **Replica** | A copy of a shard | A standby copy |
+| **Alias** | A name pointing to one or more indices | A view/table synonym |
+
+**Recommended model: one cluster, many indices.**
+
+- `psap-rhaiis-benchmark-v1`
+- `psap-llmd-benchmark-v1`
+- `psap-cpu-benchmark-v1`
+- `psap-mcp-gateway-kpi-v1`
+
+Then use an alias such as `psap-benchmark-*` or `psap-all-benchmarks` for
+cross-project queries. This gives each project its own mapping and dashboard,
+while keeping one service to operate.
+
+Do **not** create one cluster per project unless you need hard isolation,
+separate ownership, or independent scaling. Do **not** put every project in one
+index unless they truly share a query model; llm-d and CPU have extra fields,
+and the 45-column overlap is not the same as one schema. Index templates can
+standardize shared fields; index lifecycle management can handle retention.
+
+For the prototype we used one index. The next multi-project test is a second
+index for llm-d plus an alias query across both.
+
 ## Open questions that decide the store
 
 1. **OpenSearch or Postgres?** No ADR/design doc/migration branch exists in any
