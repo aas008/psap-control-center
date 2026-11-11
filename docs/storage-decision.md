@@ -16,15 +16,13 @@ Already agreed; listed here for completeness.
 - **Lost updates.** Forge downloads the whole 30 MB CSV, appends rows, and
   re-uploads it. Two jobs finishing together overwrite each other — observed by
   Sai on 2026-11-03.
-- **No dedupe.** Roughly 464 natural-key groups and ~7,770 surplus rows on
-  `(uuid, run, measured concurrency)` (upper bound; some may be legitimate
-  re-runs).
+- **No dedupe.** Duplicate rows accumulate (~7,700 surplus, an upper bound) with
+  nothing to catch them.
 - **Manual edits.** Renaming versions, importing MLflow rows, and deleting
   duplicates require downloading the CSV, editing 10k+ rows in Sheets, and
   re-uploading.
-- **Schema fragility.** Positional backfills have written `uuid` into
-  `ttft_p99` and `mlflow_run_id` into `turn_index`; `RHAIIS_FIELDNAMES` emits 54
-  columns while the consolidated file has 56 (`turn_index`, `env_vars`).
+- **Silent corruption.** Positional backfills have written values into the wrong
+  columns; adding or reordering fields breaks the file.
 - **No transactions or validation.** A failed edit leaves no rollback and no
   record of what changed.
 
@@ -69,11 +67,8 @@ on a new system to operate.
 
 **1. You still design and maintain a schema.**
 
-- Mappings are mandatory for querying. We used `dynamic: strict` to avoid
-  mapping explosion; the default field cap is 1,000.
-- `keyword` vs `text` changes query semantics; choosing wrong is easy.
-- **Field types cannot change in place.** Changing `version` from keyword to
-  text was rejected. The fix is a new index, a reindex, and an alias swap.
+- Mappings are mandatory, and field types can't change in place: changing
+  `version` from keyword to text was rejected and needs a new index + reindex.
 
 **2. No multi-row transactions.**
 
@@ -97,8 +92,6 @@ on a new system to operate.
 
 - Discover, filters, saved searches, and saved objects work well for looking at
   data.
-- `_source` is not searchable; we hit the `_source field is not searchable`
-  error while filtering.
 - It is read/explore, not a replacement for editing rows.
 
 **5. New operational surface.**
