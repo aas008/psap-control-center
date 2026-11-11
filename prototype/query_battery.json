@@ -1,0 +1,157 @@
+{
+  "exact_version": {
+    "version": "RHAIIS-3.6-fast2",
+    "pandas": 1829,
+    "opensearch": 1829,
+    "ms": 12.98
+  },
+  "substring_model": {
+    "needle": "gpt-oss",
+    "pandas": 3797,
+    "opensearch": 3797,
+    "ms": 6.28
+  },
+  "top_n_output_tok": {
+    "pandas": [
+      22397.006,
+      22371.109,
+      21924.035,
+      21418.985,
+      20915.005,
+      20586.844,
+      20586.844,
+      20260.92,
+      20146.675,
+      20017.807
+    ],
+    "opensearch": [
+      22397.006,
+      22371.109,
+      21924.035,
+      21418.985,
+      20915.005,
+      20586.844,
+      20586.844,
+      20260.92,
+      20146.675,
+      20017.807
+    ],
+    "match": true,
+    "ms": 4.45
+  },
+  "agg_version_avg": {
+    "pandas": [
+      [
+        "vLLM-0.24.0-nn-hi-solo-qwen",
+        13458.236
+      ],
+      [
+        "vLLM-0.24.0-nn-hi-gl-off-qwen",
+        13444.488
+      ],
+      [
+        "vLLM-0.24.0-nn-hi-cfs-qwen-a",
+        13320.56
+      ],
+      [
+        "TRT-LLM-1.0.0rc5",
+        9112.065
+      ],
+      [
+        "sglang-ci-quick-deleteme",
+        8843.501
+      ],
+      [
+        "vLLM-0.14.1-rerun",
+        8805.191
+      ],
+      [
+        "RHAIIS-3.4.1-GA",
+        8673.606
+      ],
+      [
+        "vLLM-0.24.0-nn-d1",
+        8155.893
+      ],
+      [
+        "vLLM-0.24.0-nn2-d2",
+        8126.727
+      ],
+      [
+        "vLLM-0.24.0-nn2-d-exc1",
+        8063.05
+      ]
+    ],
+    "opensearch": [
+      [
+        "vLLM-0.24.0-nn-hi-solo-qwen",
+        13458.236
+      ],
+      [
+        "vLLM-0.24.0-nn-hi-gl-off-qwen",
+        13444.488
+      ],
+      [
+        "vLLM-0.24.0-nn-hi-cfs-qwen-a",
+        13320.56
+      ],
+      [
+        "TRT-LLM-1.0.0rc5",
+        9112.065
+      ],
+      [
+        "sglang-ci-quick-deleteme",
+        8843.501
+      ],
+      [
+        "vLLM-0.14.1-rerun",
+        8805.191
+      ],
+      [
+        "RHAIIS-3.4.1-GA",
+        8673.606
+      ],
+      [
+        "vLLM-0.24.0-nn-d1",
+        8155.893
+      ],
+      [
+        "vLLM-0.24.0-nn2-d2",
+        8126.727
+      ],
+      [
+        "vLLM-0.24.0-nn2-d-exc1",
+        8063.05
+      ]
+    ],
+    "match": true,
+    "ms": 3.82
+  },
+  "rename_version": {
+    "uuid": "0052febc-ffb3-43c1-80d0-c7109dc23af5",
+    "original_version": "vLLM-0.24.0-pcon",
+    "new_version": "PROTOTYPE-RENAMED",
+    "rows": 5,
+    "updated": 5,
+    "verified": 5,
+    "ok": true,
+    "ms": 18.94
+  },
+  "deep_pagination": {
+    "rejected": true,
+    "error": "RequestError(400, 'search_phase_execution_exception', 'Result window is too large, from + size must be less than or equal to: [10000] but was [10001]. See the scroll api for a more efficient way to request large data sets. This limit can be set by changing the [index.max_result_window] index level s"
+  },
+  "add_field": {
+    "ok": true
+  },
+  "change_field_type": {
+    "rejected": true,
+    "error": "RequestError(400, 'illegal_argument_exception', 'mapper [version] cannot be changed from type [keyword] to [text]')"
+  },
+  "upsert_idempotency": {
+    "doc_id": "8dc30b3062564088cf251e5296f98d49c5b39ac9b27cc23ddcc38a233b4aa0cb",
+    "before": 35998,
+    "after": 35998,
+    "ok": true
+  }
+}
