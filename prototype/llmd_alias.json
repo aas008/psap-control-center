@@ -1,0 +1,58 @@
+{
+  "rhaiis_index": "psap-rhaiis-benchmark-v1",
+  "rhaiis_rows": 35998,
+  "llmd_index": "psap-llmd-benchmark-v1",
+  "llmd_rows": 454,
+  "alias": "psap-all-benchmarks",
+  "alias_rows": 36452,
+  "alias_counts_match": true,
+  "llmd_roundtrip_exact": true,
+  "llmd_columns": 53,
+  "shared_columns": 47,
+  "alias_top_models": [
+    [
+      "openai/gpt-oss-120b",
+      3982
+    ],
+    [
+      "meta-models/Muse-Glimmer-30B",
+      1709
+    ],
+    [
+      "Qwen/Qwen3-VL-30B-A3B-Instruct",
+      1665
+    ],
+    [
+      "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8",
+      1397
+    ],
+    [
+      "google/gemma-4-26B-A4B-it",
+      1350
+    ]
+  ],
+  "baseline_top_models": [
+    [
+      "openai/gpt-oss-120b",
+      3982
+    ],
+    [
+      "meta-models/Muse-Glimmer-30B",
+      1709
+    ],
+    [
+      "Qwen/Qwen3-VL-30B-A3B-Instruct",
+      1665
+    ],
+    [
+      "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8",
+      1397
+    ],
+    [
+      "google/gemma-4-26B-A4B-it",
+      1350
+    ]
+  ],
+  "alias_docs_with_EP": 454,
+  "write_via_alias_rejected": true
+}

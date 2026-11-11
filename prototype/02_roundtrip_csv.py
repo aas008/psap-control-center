@@ -14,7 +14,9 @@ OUTPUT = Path("out/consolidated_dashboard_roundtrip.csv")
 BATCH = 1000
 
 
-def export(client: OpenSearch, columns: list[str], output: Path = OUTPUT) -> int:
+def export(
+    client: OpenSearch, columns: list[str], output: Path = OUTPUT, index: str = INDEX
+) -> int:
     exported = 0
     search_after = None
     with output.open("w", newline="", encoding="utf-8") as f:
@@ -29,7 +31,7 @@ def export(client: OpenSearch, columns: list[str], output: Path = OUTPUT) -> int
             }
             if search_after is not None:
                 body["search_after"] = search_after
-            resp = client.search(index=INDEX, body=body)
+            resp = client.search(index=index, body=body)
             hits = resp["hits"]["hits"]
             if not hits:
                 break

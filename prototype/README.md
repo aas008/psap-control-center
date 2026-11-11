@@ -17,6 +17,8 @@ staging S3 object, not the older local snapshot.
 - A per-run `dashboard.csv` can be bulk-indexed into the existing index with
   stable document IDs; redelivering it does not duplicate rows, and the
   consolidated CSV regenerated from the index matches the original.
+- A second index for llm-d plus a read alias across both works for cross-project
+  queries while keeping each project's own mapping.
 
 ## Setup
 
@@ -32,6 +34,8 @@ docker run -d --name psap-opensearch \
 mkdir -p data out
 aws s3 cp s3://psap-dashboard-data/staging/rhaiis-dashboard/consolidated_dashboard.csv \
   data/consolidated_dashboard_s3.csv
+aws s3 cp s3://psap-dashboard-data/staging/llmd-dashboard/llmd-dashboard.csv \
+  data/llmd-dashboard_s3.csv
 
 python3 -m venv venv
 ./venv/bin/pip install opensearch-py pandas python-dotenv pydantic-settings structlog
@@ -44,6 +48,7 @@ python3 -m venv venv
 ./venv/bin/python 02_roundtrip_csv.py
 ./venv/bin/python 03_query_battery.py
 ./venv/bin/python 04_incremental_ingest.py
+./venv/bin/python 05_llmd_index_and_alias.py
 ```
 
 ## Results
@@ -65,6 +70,12 @@ python3 -m venv venv
   Redelivering the same file twice kept the count at 35,998. Regenerating the
   consolidated CSV took ~1.1 s and matched the original row-for-row (ignoring
   order).
+- llm-d index: 454 documents × 53 columns; 47 columns shared with RHAIIS;
+  round-trip exact.
+- Read alias `psap-all-benchmarks`: 36,452 documents (35,998 + 454). Top-5
+  models by document count through the alias matched the pandas baseline
+  exactly. `exists: EP` returned 454 documents (llm-d only). A write through
+  the alias was rejected because no index is marked `is_write_index`.
 
 ## Incremental onboarding
 
@@ -83,6 +94,20 @@ per-run file is a `_bulk` of its rows:
 A per-run batch is not atomic: a failed bulk can leave some rows indexed.
 Retrying is safe because IDs are stable; "replace run" should `delete_by_query`
 on `uuid` (optionally plus profile) before the bulk.
+
+## Multiple projects: one cluster, many indices
+
+| Name | Kind | Contents |
+|---|---|---|
+| `psap-rhaiis-benchmark-v1` | index | 35,998 docs, 56 columns |
+| `psap-llmd-benchmark-v1` | index | 454 docs, 53 columns (47 shared) |
+| `psap-all-benchmarks` | alias | read view over both |
+
+Shared fields have the same mapping type in both indices, so aggregations work
+across the alias. Fields that exist in only one index (for example `EP`) remain
+queryable, but return only that project's documents. Writes through the alias
+are rejected unless one index is marked `is_write_index`; write to the concrete
+index instead.
 
 ## Persistence
 
@@ -113,6 +138,8 @@ backup: use snapshots or saved-object export for that.
 - The dashboard takes several seconds to load a 30 MB CSV and is blank until then.
 - `_row_index` preserves the consolidated CSV's row order for the round-trip
   check. Production ordering should use a real sort key instead.
+- Cross-index aggregations need the shared fields to have the same mapping type
+  in every index; verify this before adding a project.
 - The script simulates onboarding by deleting rows from the already-ingested
   index. Forge itself does not call OpenSearch yet; that integration is the
   next step.

@@ -475,6 +475,23 @@ before the bulk, and that pair is not a transaction.
   - The Streamlit dashboard takes several seconds to load a 30 MB CSV and is
     blank until then.
 
+### Multi-project: llm-d index and alias (2026-11-10)
+
+Current staging `staging/llmd-dashboard/llmd-dashboard.csv`: **454 rows × 53
+columns**; **47 columns shared** with RHAIIS, 6 llm-d-only (`EP`, `replicas`,
+`prefill_pod_count`, `decode_pod_count`, `router_config`, `notes`).
+
+- Created `psap-llmd-benchmark-v1` with its own explicit mapping; CSV round-trip
+  exact.
+- Created read alias `psap-all-benchmarks` over both indices: **36,452
+  documents = 35,998 + 454**.
+- Top-5 models by document count through the alias matched the pandas baseline
+  exactly.
+- `exists: EP` through the alias returned 454 documents (llm-d only), so
+  project-specific fields are safe to query through the alias.
+- A write through the alias was rejected (`no write index`); writes go to a
+  concrete index.
+
 **Conclusion so far:** OpenSearch is a viable **read store / CSV projection**
 for RHAIIS: it holds the current data, reproduces the CSV exactly, and both the
 dashboard and agent read the projection unchanged. It also removes the
@@ -514,8 +531,11 @@ index unless they truly share a query model; llm-d and CPU have extra fields,
 and the 45-column overlap is not the same as one schema. Index templates can
 standardize shared fields; index lifecycle management can handle retention.
 
-For the prototype we used one index. The next multi-project test is a second
-index for llm-d plus an alias query across both.
+The prototype now has both indices and the read alias. Cross-project top-N on
+`model` through `psap-all-benchmarks` matched the pandas baseline exactly, and
+the llm-d-only `EP` field stayed queryable through the alias. The 47-column
+shared schema is enough for cross-project rollups; project-specific columns stay
+in their own index.
 
 ## Open questions that decide the store
 
