@@ -1,0 +1,11 @@
+{
+  "uuid": "5e7659fa-0a4f-4f59-8dd8-4b7549977fff",
+  "per_run_csv": "run_dashboard_5e7659fa.csv",
+  "per_run_rows": 4,
+  "deleted_for_simulation": 4,
+  "bulk_ms": 29.84,
+  "export_ms": 1059.16,
+  "total_after": 35998,
+  "same_rows_ignoring_order": true,
+  "run_rows_match": true
+}

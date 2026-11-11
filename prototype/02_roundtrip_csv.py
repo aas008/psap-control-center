@@ -14,10 +14,10 @@ OUTPUT = Path("out/consolidated_dashboard_roundtrip.csv")
 BATCH = 1000
 
 
-def export(client: OpenSearch, columns: list[str]) -> int:
+def export(client: OpenSearch, columns: list[str], output: Path = OUTPUT) -> int:
     exported = 0
     search_after = None
-    with OUTPUT.open("w", newline="", encoding="utf-8") as f:
+    with output.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=columns, lineterminator="\n")
         writer.writeheader()
         while True:
