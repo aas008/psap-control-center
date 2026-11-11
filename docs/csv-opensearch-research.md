@@ -1,6 +1,9 @@
 # CSV → OpenSearch: Grounded As-Is / To-Be
 
 Research pass for the 2026-11-04 PSAP-Automation/Tooling Unification Sync.
+Team-facing summary and recommendation:
+[`storage-decision.md`](storage-decision.md).
+
 Sources: meeting transcript/notes, `/Users/aansharm/forge`,
 `/Users/aansharm/AI-Analysis-Agent`, `/Users/aansharm/performance-dashboard`,
 and the primary OpenSearch/AWS/MCP documentation cited below.
