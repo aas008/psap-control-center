@@ -37,11 +37,66 @@ justified as a search/analytics index if full-text/fuzzy search or much larger
 scale becomes the core requirement.** The prototype should benchmark both on the
 same corpus (35,998 rows in the current staging object), not assume the winner.
 
+## What the meeting concluded (2026-11-04)
+
+The meeting did **not** choose between a relational database and OpenSearch. It
+concluded:
+
+1. **CSV is not acceptable as the system of record** — agreed by everyone.
+2. Run a **time-boxed OpenSearch MVP first**: index the data, keep a converter
+   back to CSV/DataFrame so the agent tools do not need rewriting. Aanya leads,
+   Alex advises.
+3. Keep **relational as a live alternative** and evaluate it in parallel
+   (group action item).
+4. Aanya also "shepherds" the NoSQL evaluation.
+
+The aligned decision, verbatim from the notes:
+
+> The group agreed to test replacing the agent dashboard's CSV storage with an
+> Open Search backend and a CSV converter, with Aanya leading the experiment.
+
+OpenSearch is itself a NoSQL document store. The real fork was **relational vs
+NoSQL**, with OpenSearch as the concrete NoSQL candidate; MongoDB was mentioned
+once as another option that happens to exist in the lab.
+
+### Positions
+
+- **Avi** — relational schemas and transactions are the "right way"; wants a
+  generic store for RHAIIS, llm-d, paraxis, and the MCP gateway. Later softened
+  to "not necessarily," mentioned MongoDB, and asked for a pros/cons design
+  discussion.
+- **Alex** — prefers OpenSearch because fields change; relational means upfront
+  table design and painful migrations. Proposed the minimal-change MVP (index +
+  fetcher + CSV normalizer), inference-only, so the agent keeps its CSV
+  contract. Still open to evaluating relational.
+- **Kevin** — supports a database; the main question is scope (inference vs all
+  projects). A key-value table design can be generic. Today there is no
+  database, so OpenSearch "won't be worse than having the full CSV in memory."
+  Agreed relational should be evaluated.
+- **Harshith** — moving is feasible but a major chunk (he said ~8 of 35 MCP
+  tools; the code audit found 13 of 31), 1–2 weeks with dedicated effort.
+  Leans RDBMS; worried NoSQL cannot scan multiple documents or select columns.
+- **Nikhil** — frame OpenSearch as a JSON database with many filters; the lab
+  instance has plenty of storage; test it.
+- **Sai** — hit the upload race; wants a database with simple queuing.
+- **Aanya** — CSV is fragile, especially for new fields and modalities;
+  robustness matters more than dashboard controls; agreed to prototype
+  OpenSearch and shepherd the NoSQL evaluation.
+
+### What was not decided
+
+- Final store: relational vs NoSQL/OpenSearch.
+- Postgres specifically — it was named only as an example of a relational
+  database.
+- Whether the store is inference-only or multi-project.
+- Migration/cutover, dual-write, and correction/ACID semantics.
+- Any timeline beyond the MVP.
+
 ## Grounded concern matrix
 
 | Concern (speaker) | Verdict | Evidence |
 |---|---|---|
-| **Sai: two jobs finished together, only one reached the dashboard** | **Confirmed.** The write is an unguarded whole-object read-modify-write. | `projects/rhaiis/postprocess/s3_dashboard.py:43-67`: download, `pd.concat`, `upload_file` to one key. No ETag/If-Match, lock, dedupe, or retry. `test_phase.py:630-648` logs sync failure but never raises. AWS: concurrent PUTs are last-writer-wins, no atomic append. The OpenSearch path removes this by construction: each run writes its own documents (measured 2026-11-10). |
+| **Sai: two jobs finished together, only one reached the dashboard** | **Confirmed.** The write is an unguarded whole-object read-modify-write. | `projects/rhaiis/postprocess/s3_dashboard.py:43-67`: download, `pd.concat`, `upload_file` to one key. No ETag/If-Match, lock, dedupe, or retry. `test_phase.py:630-648` logs sync failure but never raises. AWS: concurrent PUTs are last-writer-wins, no atomic append. Any row-oriented write removes this by construction: Postgres inserts rows, OpenSearch indexes documents, and neither rewrites a shared object (OpenSearch path measured 2026-11-10). |
 | **Aanya: 10k+ rows, Google Sheets editing, overwrite risk** | **Confirmed and worse.** | Local snapshot: 26,024 rows, 56 columns, 19 MB, 2,011 non-empty UUIDs, 325 run labels, 109 models, 287 versions. 689 UUIDs span more than one profile; max 5 profiles. |
 | **Harshith: ~8 of 35 MCP tools parse CSV** | **Partially true; wrong numbers and mechanism.** | The MCP server registers **31 tools in 15 modules**, not 35. Exactly **one** module parses CSV (`performance_data_loader.py`). **13 of 31** tools depend on that loader; the 8 are the core performance tools. No tool parses CSV itself. |
 | **Alex: a CSV/JSON adapter makes the backend swap lightweight** | **Partially supported.** It is a read seam, not a full migration. | Dashboard has one read boundary: `read_csv_from_s3` → `load_data()` → one DataFrame. Agent has one loader: `load_rhaiis_data()`. If the adapter returns the same DataFrame/columns, the 13 tools and dashboard pages can keep reading. But the adapter does **not** fix the write race, multi-row corrections/retractions, mapping/schema governance, startup validation, S3-first precedence, cache invalidation, event-loop blocking, substring semantics, or agent prompt wording. |
@@ -105,22 +160,92 @@ familiar.”
 
 | Dimension | Postgres | OpenSearch | Current verdict |
 |---|---|---|---|
-| **Scale** | Trivial at 26k rows / 19 MB; fine through millions | Handles it, but unnecessary | **Postgres** |
+| **Scale** | Trivial at 26k rows; fine through millions | Handles it, but unnecessary | **Postgres** |
 | **Query shape** | SQL filters, `ILIKE` substring, top-N, window/groupby; no joins needed | Query DSL, text/keyword/wildcard, nested bucket+metric aggregations | **Postgres for current queries; OpenSearch if full-text/fuzzy search becomes core** |
 | **Query frequency** | Low, cached, interactive | Also fine, but a cluster for low QPS is overkill | **Postgres** |
-| **Corrections/retractions** | Multi-row ACID transactions | Per-document atomicity; delete-by-query is non-atomic; no SQL DELETE in 3.x | **Postgres** |
-| **Schema evolution** | Migrations + `JSONB` for new fields | Dynamic mapping, but types cannot change in place; 1,000-field default cap | **Tie; Postgres with JSONB is simpler to govern** |
+| **Write path / append race** | Per-row `INSERT ... ON CONFLICT`; no shared object, no lost update | Per-document upsert by `_id`; no shared object, no lost update | **Tie on fixing the race; Postgres is stronger for atomic multi-row batches** |
+| **Corrections/retractions** | Multi-row ACID transactions | Per-document atomicity; `delete_by_query` and bulk are non-atomic; no SQL DELETE in 3.x | **Postgres** |
+| **Adding columns** | `ALTER TABLE ADD COLUMN`; metadata-only, existing rows NULL | `PUT _mapping`; existing docs lack the field | **Tie** |
+| **Changing column types** | `ALTER COLUMN TYPE` — one migration, table rewrite at 36k rows is sub-second | Not possible in place; new index + reindex + alias swap | **Postgres** |
+| **Multi-project query surface** | Table per project + `UNION ALL` view; explicit column/type alignment | Index per project + alias; shared fields must have the same mapping type | **Tie; comparable bookkeeping** |
+| **Sparse / per-modality fields** | Typed columns go sparse; `JSONB` avoids DDL but weakens typing/indexing | Sparse documents are natural; needs mapping discipline to avoid field explosion | **Slight OpenSearch, or tie with `JSONB`** |
+| **Exact aggregates and deep pagination** | Exact `GROUP BY`; no result-window cap | `terms` approximate without `shard_size`; `from + size` capped at 10,000 | **Postgres** |
 | **Operations** | Already deployed for the agent (`openshift-manifests/02-postgresql.yaml`) | Lab instance exists, but no integration, mapping ownership, or reindex runbook | **Postgres** |
+| **Bundled data browser** | None; needs Metabase/Superset/Grafana/pgAdmin | Discover, filters, saved searches, saved objects, CSV export | **OpenSearch** |
 | **Full-text/fuzzy search** | `pg_trgm`/full-text can do some; less rich | Native strength | **OpenSearch** |
 | **Large aggregations** | Fine at 26k rows; needs tuning later | Native strength at high cardinality/volume | **OpenSearch only if data grows** |
 | **Team familiarity** | Aanya/Harshith lean SQL; Kevin wants a generic schema | Alex has OpenSearch experience | Mixed; not decisive |
 
-**Recommendation:** make **Postgres the system of record first**. It matches the
-current data volume, query shape, frequency, and correction needs, and it is
-already deployed. Use **OpenSearch as a derived read/search index** only if
+**Recommendation:** make **Postgres the system of record first**. The decisive
+arguments are **multi-row transactions for corrections**, **exact aggregates**,
+and **operations** (it is already deployed). Do **not** base the choice on the
+write race — both stores fix it — or on schema flexibility, which is roughly
+even. OpenSearch's genuine wins are the **bundled data browser** and slightly
+easier sparse fields. Use OpenSearch as a **derived read/search index** only if
 full-text/fuzzy search or much larger scale becomes the real requirement. If the
 team still wants the OpenSearch MVP, frame it as a **bake-off against Postgres on
-the same 26,024-row corpus**, not as the assumed production store.
+the same corpus** (35,998 rows in the current staging object), not as the
+assumed production store.
+
+### The “structured data rules out OpenSearch” claim
+
+A tempting but overstated argument bundles three statements:
+
+1. OpenSearch's primary design center is unstructured text search.
+2. Our data is structured.
+3. Therefore OpenSearch is inappropriate.
+
+(1) and (2) are broadly true; (3) does not follow.
+
+**For the claim:**
+
+- No relevance ranking, fuzzy matching, analyzers, synonyms, or highlighting are
+  needed. The queries are exact filters, substring, top-N, and group-by.
+- Mappings are mandatory for querying; field types cannot change in place; the
+  default field cap is 1,000. The "schemaless" advantage is illusory here.
+- `terms` aggregations are approximate unless `shard_size` covers all terms;
+  `from + size` is capped at 10,000.
+- No multi-document ACID; `delete_by_query` is non-atomic.
+- 36k rows / ~30 MB is trivial for Postgres; there is no scale argument.
+- Postgres is already deployed; the team leans SQL.
+
+**Against the claim:**
+
+- Observability — structured logs and metrics — is a major OpenSearch use case.
+  Exact filters, ranges, sorting, and aggregations are first-class.
+- The prototype matched the structured workload exactly: 1,829/1,829 version
+  counts, 3,797/3,797 substring matches, exact top-10 and group-by.
+- The data is semi-structured at the edges: `runtime_args` (474 distinct
+  strings), `router_config` (large JSON/YAML), `notes` (free text).
+- Schema drift across projects is real: 56 / 53 / 50 columns, only 47 shared.
+- Per-document writes remove the S3 lost update.
+- One cluster, many indices, aliases, and a bundled UI for ad-hoc inspection.
+
+**Defensible version:** OpenSearch's strengths (relevance search, text analysis)
+do not match the workload, and it lacks multi-row transactions. Postgres is the
+better system of record. OpenSearch is justified as a derived read/search index,
+or if the bundled UI and per-project index model become the dominant
+requirement. The broad version ("structured data means OpenSearch is out") does
+not survive the prototype.
+
+### Corrected takeaways (2026-11-10)
+
+- **Fixing the write race is table stakes**, not an OpenSearch advantage.
+  Postgres per-row writes avoid it too, and add transactional batches.
+- **Multi-row corrections are the decisive Postgres argument**: rename by UUID,
+  replace a run, delete by UUID + profile. OpenSearch updates documents one at a
+  time and cannot roll back a partial correction — a rename that dies halfway
+  leaves some rows on the old version and some on the new.
+- **The alias is not a decisive advantage** over Postgres table-per-project plus
+  a `UNION ALL` view; the bookkeeping is comparable, and the view is more
+  explicit.
+- **Adding columns is a tie.** Changing a column's type favors Postgres: one
+  `ALTER` versus a new index, reindex, and alias swap.
+- **Multimodal data still arrives as rows.** It changes which columns exist, not
+  the row shape. Horizontal scale is not a current argument at 100–2,000
+  rows/month.
+- **OpenSearch's real wins** are the bundled data browser and slightly easier
+  sparse fields.
 
 ## The adapter: what “CSV DataFrame” actually means
 
@@ -158,7 +283,8 @@ substring behavior.
 **What it does not solve:**
 
 - the write race and lost updates — those require changing the write path (S3
-  conditional writes, or per-document upsert), not just the read seam;
+  conditional writes, or a row-oriented store such as Postgres or OpenSearch),
+  not just the read seam;
 - multi-row corrections/retractions and transactional guarantees;
 - mapping/schema governance and reindexing;
 - the agent’s startup validation (`main.py:93-96`) and S3-first precedence;
@@ -378,10 +504,12 @@ TO-BE
 
 1. **Phase 0 — stop the bleeding (days).** If the CSV stays authoritative, add
    `If-Match`/ETag conditional write with bounded retry to `sync_csv_to_s3`.
-   The measured alternative is per-document upsert: the prototype bulk-indexed a
-   per-run `dashboard.csv` with stable IDs in ~30 ms, was idempotent on
-   redelivery, and had no whole-object race. Either removes lost updates;
-   upsert also removes duplicate rows. This is independent of the store choice.
+   The measured alternative is a row-oriented write: the prototype bulk-indexed
+   a per-run `dashboard.csv` with stable IDs in ~30 ms, was idempotent on
+   redelivery, and had no whole-object race. A Postgres insert path removes the
+   race the same way; OpenSearch adds per-document upsert. Either removes lost
+   updates; upsert also removes duplicate rows. This is independent of the store
+   choice.
 2. **Phase 1 — store bake-off + adapter (Aanya’s prototype).** Load the same
    corpus into OpenSearch with an explicit mapping and into Postgres with a real
    schema. Use the current staging corpus (35,998 rows at the time of the
@@ -542,10 +670,12 @@ in their own index.
 1. **OpenSearch or Postgres?** No ADR/design doc/migration branch exists in any
    repo. The meeting chose an OpenSearch MVP, but the data volume, query shape,
    and correction needs point to Postgres as the lower-risk system of record.
-   Decide with the bake-off, not by availability.
-2. **Do consumers need row-level correction/retraction?** If yes, OpenSearch’s
-   per-document atomicity plus upsert may not be enough; multi-row transactions
-   force a relational backend.
+   Current conclusion: **Postgres as system of record; OpenSearch as a derived
+   read/search index or a time-boxed MVP.** Decide with the bake-off, not by
+   availability.
+2. **Do consumers need multi-row correction/retraction?** If yes, OpenSearch’s
+   per-document atomicity plus upsert is not enough; multi-row transactions
+   force a relational backend. This is the deciding question.
 3. **What is the real query rate and latency SLO?** The repos show 300 s caches,
    full-frame loads, and user-driven dashboard/agent calls. Measure production
    request rate and p95 latency before choosing a search cluster.
@@ -558,8 +688,9 @@ in their own index.
    unified schema feasible, but doing all at once multiplies the consumer
    surface with no added safety.
 6. **Growth and multimodality:** current normal months are 100–2,000 rows; the
-   2026-10 spike is 12,700 rows (likely backfill). Project multimodal rows and
-   decide whether the store needs search at scale or just a larger table.
+   2026-10 spike is 12,700 rows (likely backfill). Multimodal data still arrives
+   as rows; it changes which columns exist, not the row shape. Decide whether
+   the store needs search at scale or just a larger table.
 
 ## Corrections to the meeting framing
 
@@ -575,8 +706,9 @@ in their own index.
 - **The adapter is a read seam, not a full migration.** It preserves the
   dashboard/agent DataFrame contract; it does not fix the write race,
   multi-row ACID, mapping governance, startup/cache behavior, or substring
-  semantics. The *write path* is separate: per-document upsert removes the
-  append lost update, but the adapter alone does not.
+  semantics. The *write path* is separate: a row-oriented store (Postgres
+  insert or OpenSearch upsert) removes the append lost update, but the adapter
+  alone does not.
 - OpenSearch is not schema-free at query time: mappings are mandatory for
   SQL/PPL, field types cannot change in place, and the default field cap is
   1,000.
@@ -584,6 +716,20 @@ in their own index.
   and delete-by-query is non-atomic. Per-document upsert is the safe primitive.
 - CSV export from OpenSearch Dashboards is not missing; the “only saved
   searches” claim was refuted.
+
+### Corrections to earlier drafts of this doc
+
+- **The write race is not an OpenSearch advantage.** Both row-oriented stores
+  fix it; Postgres adds transactional multi-row batches. Earlier text implied
+  per-document upsert was an OpenSearch-specific win.
+- **“Schema evolution” is not a tie in both directions.** Adding columns is a
+  tie; changing a column's type favors Postgres.
+- **The alias is not a decisive advantage.** Table-per-project plus a `UNION
+  ALL` view is comparable bookkeeping and more explicit about the shared
+  contract.
+- **Multimodal and horizontal scale are not current arguments.** Multimodal
+  data still arrives as rows; it changes the column set, not the row shape.
+  At 100–2,000 rows/month, neither store is stressed.
 
 ## Sources
 
