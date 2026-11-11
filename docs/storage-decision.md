@@ -7,11 +7,6 @@ The detailed research, prototype scripts, and raw measurements are in
 
 **Decision requested:** choose the system of record for benchmark metadata.
 
-**Recommendation:** **Postgres as the system of record.** Keep S3 for artifacts
-(logs, traces, model files), and treat the consolidated CSV as an export during
-the transition. OpenSearch is viable as a derived read/search index or for
-ad-hoc exploration, but not as the system of record.
-
 ---
 
 ## 1. Why not CSV
@@ -46,19 +41,14 @@ CSV (454 rows × 53 columns). Prototype scripts are in
 
 OpenSearch can store and query this data. Measured results:
 
-- 35,998 documents ingested in ~5 s; CSV round-trip with **0 cell mismatches**.
+- 35,998 documents ingested in ~5 s; CSV round-trip [what does this mean- roundtrip, add a diagram here] with **0 cell mismatches**.
 - The Streamlit dashboard and the agent's `load_rhaiis_data()` read the exported
-  CSV unchanged.
-- Exact version count **1,829/1,829**; case-insensitive model substring
-  **3,797/3,797**; exact top-10 throughput.
-- Rename version by UUID: 5 rows updated in ~113 ms.
-- Per-run `dashboard.csv` bulk-ingested in ~30 ms; redelivery is idempotent.
-- llm-d index + read alias: **36,452 documents** across both indices;
-  cross-project top-5 models matched pandas exactly.
-- Discover gives a usable ad-hoc table with saved searches and CSV export.
+  CSV unchanged.Per-run `dashboard.csv` bulk-ingested in ~30 ms;
+- [ how did you do this using DQL? ] Rename version by UUID: 5 rows updated in ~113 ms.
+- Discover [UI] gives a usable ad-hoc table with saved searches and CSV export.
 
 So the objection is not "OpenSearch cannot do it." It is that the operations we
-care about become harder, and we take on a new system to operate.
+care about become harder [like what], and we take on a new system to operate.
 
 ### Pain points found during setup and testing
 
@@ -70,20 +60,7 @@ care about become harder, and we take on a new system to operate.
 - **Field types cannot change in place.** Changing `version` from keyword to
   text was rejected. The fix is a new index, a reindex, and an alias swap.
 
-**2. Aggregations are approximate by default.**
-
-- A `terms` aggregation ordered by average throughput returned **5 rows for
-  `vLLM-0.22.0` instead of 62**. We had to set `shard_size: 1000` to match
-  pandas.
-- This is a per-query setting. Every new aggregation needs to remember it.
-
-**3. Deep pagination is capped.**
-
-- `from: 10000` is rejected by `index.max_result_window`.
-- Full exports need `search_after` or a point-in-time cursor — extra code that
-  pandas does not need.
-
-**4. No multi-row transactions.**
+**4. No multi-row transactions.** [ what does this mean? deleting was not easy? i thought we did it in our tests?]
 
 - Each document update is atomic, but `update_by_query`, `delete_by_query`, and
   bulk are **not atomic across documents**.
@@ -91,14 +68,7 @@ care about become harder, and we take on a new system to operate.
 - A rename that dies halfway leaves some rows on the old version and some on the
   new. "Replace a run" is delete-then-insert, two operations with a window in
   between.
-- This is the biggest gap: rename-by-UUID, replace-a-run, and delete-by-UUID +
-  profile are exactly the issue #94 operations.
-
-**5. The write path is still a code change.**
-
-- Bulk indexing a per-run file works and is idempotent, but Forge must call
-  OpenSearch, maintain mappings, and handle retries and partial batches.
-- The S3 race is fixed only after that work lands. It is not a drop-in.
+- This is the biggest gap: rename-by-UUID, replace-a-run, and delete-by-UUID + profile  
 
 **6. Multi-project bookkeeping is comparable, not better.**
 
@@ -111,8 +81,6 @@ care about become harder, and we take on a new system to operate.
 
 - Discover, filters, saved searches, and saved objects work well for looking at
   data.
-- `_source` is not searchable; we hit the `_source field is not searchable`
-  error while filtering.
 - It is read/explore, not a replacement for editing rows.
 
 **8. New operational surface.**
@@ -150,16 +118,12 @@ Postgres matches the operations the team actually performs.
   (`openshift-manifests/02-postgresql.yaml`); backups and operations are known.
 
 ### What Postgres does not solve
-
-- **No bundled data browser.** Needs Metabase/Superset/Grafana/pgAdmin.
-- **Full-text/fuzzy search is weaker.** Not a current requirement.
 - **Sparse fields need `JSONB` discipline.** Weaker typing and GIN indexes for
   fast queries.
-- **It was not prototyped in this pass.** Postgres claims here are based on
-  standard behavior and the existing deployment, not a local benchmark. A short
-  bake-off on the same corpus and queries would confirm them.
+  ^^ what does this mean? 
 
-## 4. Scorecard
+
+## 4. Scorecard (make edits below in case i removed the point above)
 
 Confidence levels:
 
